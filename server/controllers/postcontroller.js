@@ -1,4 +1,4 @@
-const Post = require('../models/Post');
+const Post = require('../models/post');
 
 exports.createPost = async (req, res) => {
   try {
@@ -9,7 +9,7 @@ exports.createPost = async (req, res) => {
       image,
       video,
       group,
-      author: req.user.id,
+      author: req.user.id
     });
 
     const populatedPost = await Post.findById(newPost._id).populate('author', 'username');
