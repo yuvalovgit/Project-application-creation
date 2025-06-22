@@ -1,61 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>Feed</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instagram Clone</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* תוכל לשים פה את הקוד ששלחת לי מקודם של העיצוב */
+    /* או לשים אותו בקובץ style.css חיצוני */
+  </style>
 </head>
 <body>
-  <div class="feed-container">
-    <h2>📬 Your Feed</h2>
-    <div id="post-list"></div>
+  <div class="container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div>
+        <div class="logo">Instagram</div>
+        <ul>
+          <li><img src="images/images (1).png"> דף הבית</li>
+          <li><img src="images/searchicon.png"> חיפוש</li>
+          <li><img src="images/compass-map-icon-1024x1024-vubs9t7a.png"> גילוי</li>
+          <li><img src="images/reels.png"> Reels</li>
+          <li><img src="images/messsgeess.png"> הודעות</li>
+          <li><img src="images/appointment-reminders.png"> התראות</li>
+          <li><img src="images/plusplus.png"> יצירה</li>
+          <li><img src="images/download (4).jpg" class="profile-img"> פרופיל</li>
+        </ul>
+      </div>
+      <ul>
+        <li><img src="images/threds.png"> Threads</li>
+        <li><img src="images/images.png"> עוד</li>
+      </ul>
+    </div>
 
-    <h3>Create New Post</h3>
-    <textarea id="new-post-content" placeholder="Write something..."></textarea>
-    <button onclick="createPost()">Post</button>
+    <!-- Feed -->
+    <div class="feed">
+      <div class="stories">
+        <!-- Story Circles קבועים או דינמיים -->
+      </div>
+
+      <!-- כאן הפוסטים יכנסו -->
+      <div id="dynamic-posts"></div>
+    </div>
+
+    <!-- Left Panel -->
+    <div class="left-panel">
+      <!-- תוכן קבוע בצד שמאל -->
+    </div>
   </div>
 
   <script>
-    async function loadPosts() {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/posts", {
-        headers: { Authorization: "Bearer " + token },
-      });
-      const posts = await res.json();
+    const token = localStorage.getItem("token");
 
-      const list = document.getElementById("post-list");
-      list.innerHTML = "";
-      posts.reverse().forEach((post) => {
-        const div = document.createElement("div");
-        div.className = "post";
-        div.innerHTML = `<strong>${post.author?.username || "Unknown"}:</strong> ${post.content}`;
-        list.appendChild(div);
-      });
+    if (!token) {
+      alert("עליך להתחבר תחילה");
+      window.location.href = "login.html";
     }
 
-    async function createPost() {
-      const content = document.getElementById("new-post-content").value;
-      const token = localStorage.getItem("token");
+    async function loadPosts() {
+      try {
+        const res = await fetch("http://localhost:5000/api/posts", {
+          headers: {
+            "Authorization": "Bearer " + token
+          }
+        });
 
-      const res = await fetch("http://localhost:5000/api/posts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token,
-        },
-        body: JSON.stringify({ content }),
-      });
+        if (!res.ok) throw new Error("בעיה בטעינת הפוסטים");
 
-      if (res.ok) {
-        document.getElementById("new-post-content").value = "";
-        loadPosts(); // refresh list
-      } else {
-        alert("❌ Failed to post");
+        const posts = await res.json();
+        const container = document.getElementById("dynamic-posts");
+        container.innerHTML = "";
+
+        posts.reverse().forEach(post => {
+          const div = document.createElement("div");
+          div.className = "post";
+          div.innerHTML = `
+            <div class="post-header">
+              <img src="images/default-profile.jpg" class="avatar">
+              <span><strong>${post.author?.username || 'משתמש'}</strong> • לפני רגע</span>
+            </div>
+            ${post.image ? `<img src="${post.image}" class="post-image">` : ''}
+            <div class="post-footer">
+              <p><strong>${post.author?.username}</strong> ${post.content}</p>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      } catch (err) {
+        console.error(err);
+        alert("שגיאה בטעינה");
       }
     }
 
-    // Load posts on page load
-    window.onload = loadPosts;
+    loadPosts();
   </script>
 </body>
 </html>

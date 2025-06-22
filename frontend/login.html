@@ -3,34 +3,77 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Instagram Login</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      background-color: #000;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .login-container {
+      background-color: #000;
+      border: 1px solid #262626;
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+    }
+    .login-container h1 {
+      font-size: 48px;
+      color: white;
+      margin-bottom: 30px;
+      font-family: cursive;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      background: #121212;
+      border: 1px solid #333;
+      border-radius: 4px;
+      color: white;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background: #0095f6;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-  <div class="form-container">
-    <h2>Login</h2>
-    <input id="login-username" type="text" placeholder="Username" />
-    <input id="login-password" type="password" placeholder="Password" />
-    <button onclick="login()">Login</button>
-    <p>Don't have an account? <a href="register.html">Register here</a></p>
+  <div class="login-container">
+    <h1>Instagram</h1>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="handleLogin()">Log In</button>
   </div>
+
   <script>
-    async function login() {
-      const username = document.getElementById("login-username").value;
-      const password = document.getElementById("login-password").value;
+    async function handleLogin() {
+      const username = document.getElementById("username").value;
+      const password = document.getElementById("password").value;
 
       const res = await fetch("http://localhost:5000/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, password })
       });
 
       const data = await res.json();
+
       if (res.ok) {
         localStorage.setItem("token", data.token);
-        window.location.href = "feed.html"; // ✅ Redirect to feed
+        window.location.href = "feed.html";
       } else {
-        alert("❌ " + data.error);
+        alert(data.error || "Login failed");
       }
     }
   </script>
