@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Feed</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="feed-container">
+    <h2>📬 Your Feed</h2>
+    <div id="post-list"></div>
+
+    <h3>Create New Post</h3>
+    <textarea id="new-post-content" placeholder="Write something..."></textarea>
+    <button onclick="createPost()">Post</button>
+  </div>
+
+  <script>
+    async function loadPosts() {
+      const token = localStorage.getItem("token");
+      const res = await fetch("http://localhost:5000/api/posts", {
+        headers: { Authorization: "Bearer " + token },
+      });
+      const posts = await res.json();
+
+      const list = document.getElementById("post-list");
+      list.innerHTML = "";
+      posts.reverse().forEach((post) => {
+        const div = document.createElement("div");
+        div.className = "post";
+        div.innerHTML = `<strong>${post.author?.username || "Unknown"}:</strong> ${post.content}`;
+        list.appendChild(div);
+      });
+    }
+
+    async function createPost() {
+      const content = document.getElementById("new-post-content").value;
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:5000/api/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify({ content }),
+      });
+
+      if (res.ok) {
+        document.getElementById("new-post-content").value = "";
+        loadPosts(); // refresh list
+      } else {
+        alert("❌ Failed to post");
+      }
+    }
+
+    // Load posts on page load
+    window.onload = loadPosts;
+  </script>
+</body>
+</html>
