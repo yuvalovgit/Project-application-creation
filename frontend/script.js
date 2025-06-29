@@ -21,11 +21,13 @@ async function handleLogin() {
 async function handleRegister() {
   const username = document.getElementById("register-username").value;
   const password = document.getElementById("register-password").value;
+  const email = document.getElementById("register-email").value;
+  const fullname = document.getElementById("register-fullname").value;
 
   const res = await fetch("http://localhost:5000/api/auth/register", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password })
+    body: JSON.stringify({ username, password, email, fullname })
   });
 
   const data = await res.json();

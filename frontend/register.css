@@ -1,0 +1,219 @@
+@font-face {
+  font-family: 'InstagramFont';
+  src: url('InstagramFont.woff2') format('woff2');
+}
+
+/* עיצוב בסיס של הדף */
+body {
+  background-color: #000;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  flex-direction: column;
+  color: #fff;
+}
+.logo-img {
+  width: 210px;
+  padding: 13px 10px;
+  margin-bottom: 3px;
+}
+
+/* כותרת ראשית */
+/* עוטף את כל התוכן ומסדר אותו בעמודה עם רווח */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+/* קופסת הרשמה וקופסת login מתחת */
+.register-box, .login-box {
+  background-color: #000;
+  border: 1px solid #262626;
+  border-radius: 0;   /* מבטל את העיגול - שפיצי */
+  width: 350px;
+  text-align: center;
+  padding: 20px 0;   /* מרווח למעלה ולמטה, אפס בצדדים */
+  font-size: 14px;
+}
+
+
+
+
+.subtitle {
+  color: #8e8e8e;   /* צבע אפור שממש דומה למקורי */
+  font-size: 15px;  /* טיפה יותר גדול */
+  font-weight: 600; /* הופך את זה לדק יותר (רגיל) */
+  margin-bottom: 20px;
+  line-height: 1.5; /* נותן ריווח שורות יפה */
+  margin-top: -11px;
+}
+
+/* כפתור כניסה עם פייסבוק */
+.facebook-btn {
+  width: 70%;      /* הופך את זה לרוחב קטן יותר בתוך הקופסה */
+    margin: 10px auto; /* מרכז את הכפתור אופקית */
+  background-color: #2f41dc;
+  color: white;
+  border: none;
+  border-radius: 9px;
+  font-weight: bold;
+  font-size: 14px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  width: 70%;          /* הופך את זה לרוחב קטן יותר בתוך הקופסה */
+  margin: 20px auto;   /* מרכז את זה אופקית */
+  padding: 0;
+  color: #8e8e8e;
+  font-size: 13px;
+  gap: 15px;
+}
+
+.divider .line {
+  flex: 1;
+  height: 1px;
+  background-color: #555;
+  opacity: 0.4;
+  
+}
+
+
+/* שדות קלט */
+input[type="text"], input[type="password"] {
+  width: 65%;          /* שיחקת מ-100% ל-90% שיהיה קטן יותר */
+  padding: 10px;
+  margin: 1px 0 5px 50px; /* יוסיף רווח מצד שמאל לדחוף אותם קצת שמאלה */
+  background-color: #121212;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 2px;
+  font-size: 14px;
+
+  /* שליטה על עובי הגבול */
+  border-width: 1.5px;
+
+  /* אם תרצה להזיז הכל ימינה/שמאלה */
+  display: block;
+}
+
+/* טקסט הסבר קטן עם לינקים */
+.info-text {
+  font-size: 12px;
+  color:#8e8e8e;    
+  margin: 10px 0;
+}
+
+.info-text a {
+  color: #584ae8;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+/* כפתור ההרשמה */
+.signup-btn {
+  width: 73%;
+  padding: 8px;
+  margin-top: 10px;
+  background-color: #584ae8;
+  border: none;
+  border-radius: 5px;
+  color: rgb(189, 184, 184);
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  
+}
+
+/* הקופסה התחתונה שיש בה לינק ל-login */
+.login-box {
+  font-size: 14px;
+
+}
+.login-text {
+  color: #dddada;
+}
+.login-box a {
+  color: #584ae8;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+
+/* חלק שמציע להוריד את האפליקציה */
+.get-app {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.get-app p {
+  color: hsl(0, 38%, 97%);
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+/* אייקונים של חנויות */
+
+.google-store {
+  width: 140px;
+  height: auto;
+}
+
+.microsoft-store {
+  width: 115px;
+  height: auto;
+}
+
+
+/* === Footer === */
+.footer {
+  text-align: center;
+  font-size: 12px;
+  color: #8e8e8e;
+  margin-top: 30px;
+  padding: 20px;
+  max-width: 600px;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.footer-links a {
+  text-decoration: none;
+  color: #8e8e8e;
+  font-size: 12px;
+  white-space: nowrap; /* הוספנו את זה כדי שלא ירד שורה */
+}
+
+
+.footer-links a:hover {
+  text-decoration: underline;
+}
+
+.footer-bottom {
+  margin-top: 10px;
+}
+
+/* גודל האייקון של פייסבוק */
+.fb-icon {
+  width: 20px;
+  height: 20px;
+}

