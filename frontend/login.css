@@ -1,0 +1,298 @@
+/* === Reset & Base === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: sans-serif;
+}
+
+body {
+  background-color: #000;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* === Layout === */
+.main-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 950px;
+  margin: 40px 0;
+}
+
+.image-side {
+  flex: 1;
+  background: url("images/login/weirdPhoto.png") no-repeat center center;
+  background-size: 90%;
+  height: 581px;
+}
+
+.form-side {
+  width: 350px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* === Login Box === */
+.login-box {
+  background-color: #000;
+  padding: 35px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo-img {
+  width: 210px;
+  padding: 12px 10px;
+  margin-bottom: 30px;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  margin: 5px 0;
+  background-color: #121212;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: white;
+  outline: none;
+  caret-color: white;
+}
+
+input::placeholder {
+  color: #777;
+}
+
+input:focus {
+  background-color: #121212;
+  border-color: #555;
+}
+
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  padding-right: 60px;
+}
+
+#togglePassword {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: white;
+  font-weight: bold;
+  font-size: 13px;
+  display: none;
+}
+
+input:focus + #togglePassword,
+#password:not(:placeholder-shown) + #togglePassword {
+  display: block;
+}
+
+/* === Button === */
+.login-btn {
+  width: 100%;
+  padding: 9px;
+  background-color: #3b44d9; /* כהה כששדות ריקים */
+  color: #d3d3d3; /* צבע טקסט אפור */
+  font-weight: 600;
+  font-size: 14px;
+  border: none;
+  border-radius: 10px;
+  margin-top: 13px;
+  transition: all 0.2s;
+  pointer-events: none;
+}
+
+.login-btn.enabled {
+  background-color: #4161f6; /* בהיר יותר */
+  color: white;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.login-btn.enabled:hover {
+  background-color: #3756e0;
+}
+
+/* === Text Links & Details === */
+.divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  color: #8e8e8e;
+  font-size: 13px;
+  margin: 20px 0;
+  gap: 15px;
+}
+
+.divider .line {
+  flex: 1;
+  height: 1px;
+  background-color: #262626;
+}
+
+.facebook-login {
+  color: #1877f2;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.fb-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.forgot {
+  color: #6c70e1;
+  font-size: 14px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.forgot:hover {
+  text-decoration: underline;
+}
+
+.signup-box {
+  width: 100%;
+  margin-top: 10px;
+  padding: 20px;
+  color: white;
+  text-align: center;
+  font-size: 15px;
+}
+
+.signup-box a {
+  color: #818ffa;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 15px;
+}
+
+.signup-box a:hover {
+  text-decoration: underline;
+}
+
+/* === Footer === */
+.footer {
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  color: #aaaaaa;
+  margin-top: 40px;
+  padding: 20px;
+}
+
+.footer-links {
+  margin-bottom: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.footer-links a {
+  text-decoration: none;
+  color: #aaaaaa;
+}
+
+.footer-links a:hover {
+  text-decoration: underline;
+}
+
+.footer-bottom {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+
+.lang-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  color: #aaaaaa;
+}
+
+.language-select {
+  background: transparent;
+  border: none;
+  color: #aaaaaa;
+  font-size: inherit;
+  padding-right: 18px;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.language-select:focus {
+  outline: none;
+}
+
+.language-select::-ms-expand {
+  display: none;
+}
+
+.arrow {
+  position: absolute;
+  right: 4px;
+  font-size: 10px;
+  pointer-events: none;
+  color: #aaaaaa;
+}
+
+/* === Flex screen === */
+@media (max-width: 768px) {
+  body {
+    justify-content: flex-start;
+    align-items: center;
+    height: auto;
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
+
+  .main-wrapper {
+    flex-direction: column;
+    width: 100%;
+    max-width: 390px; /* כמו באינסטגרם המקורי */
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .image-side {
+    display: none;
+  }
+
+  .form-side {
+    width: 100%;
+  }
+
+  .login-box {
+    padding: 20px;
+  }
+
+  .footer {
+    padding: 20px;
+  }
+}

@@ -2,102 +2,104 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Instagram Login</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    @font-face {
-      font-family: 'InstagramFont';
-      src: url('InstagramFont.woff2') format('woff2');
-    }
-
-    body {
-      background-color: #000;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transform: scale(1.5);
-    }
-
-    .login-container {
-      background-color: #000;
-      border: 1px solid #262626;
-      border-radius: 8px;
-      width: 350px; 
-      text-align: center;
-      padding: 40px;
-      margin-bottom: 10px;
-    }
-
-    .login-container h1 {
-      font-family: 'InstagramFont', cursive;
-      font-size: 48px;
-      color: white;
-      margin-bottom: 30px;
-    }
-
-    input[type="text"], input[type="password"] {
-      width: 100%;
-      padding: 10px;
-      margin: 6px 0;
-      background-color: #121212;
-      color: #fff;
-      border: 1px solid #333;
-      border-radius: 4px;
-      font-size: 14px;
-    }
-
-    button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      background-color: #0095f6;
-      border: none;
-      border-radius: 6px;
-      color: white;
-      font-weight: bold;
-      font-size: 14px;
-      cursor: pointer;
-    }
-
-    .bottom-text {
-      font-size: 12px;
-      color: #8e8e8e;
-      margin-top: 10px;
-    }
-
-    .bottom-text a {
-      color: #0095f6;
-      text-decoration: none;
-      font-weight: bold;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Instagram Login Clone</title>
+  <link rel="stylesheet" href="login.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="wrapper">
-    <div class="login-container">
-      <h1>Instagram</h1>
-      <input type="text" placeholder="Username" id="username">
-      <input type="password" placeholder="Password" id="password">
-      <button onclick="handleLogin()">Log In</button>
-    </div>
-
-    <div class="login-container">
-      <div class="bottom-text">
+  <div class="main-wrapper">
+    <div class="image-side"></div>
+    <div class="form-side">
+      <div class="login-box">
+        <img class="logo-img" src="images/login/instaLogo.png" alt="Instagram logo" />
+        <input type="text" id="username" placeholder="Phone number, username, or email">
+        <div class="password-wrapper">
+          <input type="password" id="password" placeholder="Password">
+          <span id="togglePassword">Show</span>
+        </div>
+        <button class="login-btn" onclick="handleLogin()">Log In</button>
+        <div class="divider">
+          <div class="line"></div>
+          <span>OR</span>
+          <div class="line"></div>
+        </div>
+        <div class="facebook-login">
+          <img src="images/login/facebook-icon.png" alt="Facebook logo" class="fb-icon" />
+          <span>Log in with Facebook</span>
+        </div>
+        <div class="forgot">Forgot password?</div>
+      </div>
+      <div class="signup-box">
         Don't have an account? <a href="register.html">Sign up</a>
       </div>
     </div>
   </div>
 
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="#">Meta</a>
+      <a href="#">About</a>
+      <a href="#">Blog</a>
+      <a href="#">Jobs</a>
+      <a href="#">Help</a>
+      <a href="#">API</a>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Locations</a>
+      <a href="#">Instagram Lite</a>
+      <a href="#">Threads</a>
+      <a href="#">Contact Uploading & Non-Users</a>
+      <a href="#">Meta Verified</a>
+      <a href="#">Settlement Agreements</a>
+    </div>
+    <div class="footer-bottom">
+      <div class="lang-wrapper">
+        <select class="language-select">
+          <option value="en">English</option>
+          <option value="he">עברית</option>
+        </select>
+        <span class="arrow">▾</span>
+      </div>
+      <span class="copy">© 2025 Instagram from Meta</span>
+    </div>
+  </footer>
+
+  <script>
+    const passwordInput = document.getElementById('password');
+    const toggleBtn = document.getElementById('togglePassword');
+    toggleBtn.style.display = 'none';
+
+    passwordInput.addEventListener('input', () => {
+      toggleBtn.style.display = passwordInput.value ? 'block' : 'none';
+    });
+
+    toggleBtn.addEventListener('click', () => {
+      const isHidden = passwordInput.type === 'password';
+      passwordInput.type = isHidden ? 'text' : 'password';
+      toggleBtn.textContent = isHidden ? 'Hide' : 'Show';
+    });
+
+    const loginBtn = document.querySelector('.login-btn');
+    const inputs = [document.getElementById('username'), passwordInput];
+
+    function updateLoginButtonState() {
+      const allFilled = inputs.every(input => input.value.trim() !== '');
+      if (allFilled) {
+        loginBtn.classList.add('enabled');
+      } else {
+        loginBtn.classList.remove('enabled');
+      }
+    }
+
+    inputs.forEach(input => input.addEventListener('input', updateLoginButtonState));
+
+    loginBtn.addEventListener('click', (e) => {
+      if (!loginBtn.classList.contains('enabled')) {
+        e.preventDefault();
+      }
+    });
+  </script>
   <script src="script.js"></script>
 </body>
 </html>
