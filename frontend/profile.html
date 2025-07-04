@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>User Profile</title>
+  <link rel="stylesheet" href="profile.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+  />
+</head>
+<body>
+  <div class="profile-container">
+
+    <div class="profile-header">
+      <!-- מכולה של תמונת הפרופיל -->
+      <div class="profile-avatar-container" id="profileAvatarContainer" style="position: relative; cursor: pointer;">
+        <img
+          id="profileImage"
+          src="default-avatar.png"
+          alt="Profile Picture"
+          class="avatar"
+          title="Click to change profile image"
+          style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover;"
+        />
+        <!-- input מוסתר להעלאת תמונה -->
+        <input type="file" id="imageUpload" accept="image/*" style="display:none" />
+      </div>
+
+      <div class="profile-info">
+        <div class="profile-top-row">
+          <h2 id="username">Username</h2>
+          <button id="followBtn" class="btn follow-btn">Follow</button> <!-- כפתור מעקב -->
+          <button class="btn edit-profile-btn">Edit profile</button>
+          <button class="btn view-archive-btn">View archive</button>
+          <button class="btn settings-btn"><i class="fa fa-cog"></i></button>
+        </div>
+
+        <div class="profile-stats">
+          <span id="postsCount">0 posts</span>
+          <span id="followersCount">0 followers</span>
+          <span id="followingCount">0 following</span>
+        </div>
+
+        <div class="profile-bio" id="bio">
+          User bio goes here...
+        </div>
+
+        <div class="profile-verified">
+          <span>@username</span>
+          <i class="fa fa-check-circle verified-icon"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stories/Highlights -->
+    <div class="profile-stories">
+      <div class="story">
+        <img src="story1.jpg" alt="Story 1" />
+        <span>Brazil</span>
+      </div>
+      <div class="story">
+        <img src="story2.jpg" alt="Story 2" />
+        <span>Panama</span>
+      </div>
+      <div class="story">
+        <img src="story3.jpg" alt="Story 3" />
+        <span>Ecuador</span>
+      </div>
+      <!-- הוסף עוד עיגולים לפי הצורך -->
+    </div>
+
+    <!-- Posts Grid -->
+    <div id="postsGrid" class="posts-grid">
+      <!-- כאן יוצגו הפוסטים - טעינה דינמית -->
+    </div>
+    
+  </div>
+
+  <!-- Modal Overlay לשינוי תמונת פרופיל -->
+  <div id="profileModal" class="modal hidden">
+    <div class="modal-content">
+      <h3>Change Profile Photo</h3>
+      <button id="uploadPhotoBtn" class="modal-btn">Upload Photo</button>
+      <button id="removePhotoBtn" class="modal-btn remove-btn">Remove Current Photo</button>
+      <button id="cancelBtn" class="modal-btn cancel-btn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- סיידבר נגיש לניווט -->
+  <div class="sidebar">
+  <h2>Instagram</h2>
+  <ul>
+    <li><a href="feed.html"><i class="fas fa-house"></i> <span class="link-text">Home</span></a></li>
+    <li><a href="#"><i class="fas fa-magnifying-glass"></i> <span class="link-text">Search</span></a></li>
+    <li><a href="#"><i class="fas fa-compass"></i> <span class="link-text">Explore</span></a></li>
+    <li><a href="#"><i class="fas fa-clapperboard"></i> <span class="link-text">Reels</span></a></li>
+    <li><a href="#"><i class="fas fa-envelope"></i> <span class="link-text">Messages</span></a></li>
+    <li><a href="#"><i class="far fa-heart"></i> <span class="link-text">Notifications</span></a></li>
+    <li><a href="#"><i class="far fa-square-plus"></i> <span class="link-text">Create</span></a></li>
+    <li><a href="profile.html"><i class="far fa-user"></i> <span class="link-text">Profile</span></a></li>
+    <li><a href="#"><i class="fas fa-bars"></i> <span class="link-text">More</span></a></li>
+  </ul>
+</div>
+
+<nav class="bottom-nav justify-content-evenly align-items-center bg-black text-white py-2 position-fixed bottom-0 w-100 border-top border-dark" style="z-index: 999;">
+  <a href="feed.html" class="text-white"><i class="fas fa-home fa-lg"></i></a>
+  <a href="#"><i class="fas fa-compass fa-lg"></i></a>
+  <a href="#"><i class="fas fa-clapperboard fa-lg"></i></a>
+  <a href="#"><i class="far fa-square-plus fa-lg"></i></a>
+  <a href="#"><i class="fas fa-envelope fa-lg"></i></a>
+  <a href="profile.html" class="text-white"><i class="far fa-user fa-lg"></i></a>
+</nav>
+
+
+  <script src="profile.js"></script>
+</body>
+</html>

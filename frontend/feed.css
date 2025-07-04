@@ -1,0 +1,315 @@
+/*==================== RESET & GLOBAL ====================*/
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* Internet Explorer 10+ */
+}
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background-color: #000;
+  color: white;
+}
+
+/*==================== LAYOUT ====================*/
+.container {
+  display: grid;
+  grid-template-columns: 1fr 600px 1fr;
+  min-height: 100vh;
+}
+
+/*==================== SIDEBAR ====================*/
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: #000;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  padding-top: 1rem;
+  z-index: 1000;
+  width: 220px;
+  height: auto;
+  box-sizing: border-box;
+  display: flex;
+}
+
+.sidebar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -25px;
+  width: 1px;
+  height: 100%;
+  background-color: #262626;
+}
+
+.sidebar .logo,
+.sidebar h2 {
+  font-family: 'Grand Hotel', cursive;
+  font-size: 36px;
+  margin-bottom: 60px;
+  color: #fff;
+  margin-left: -20%;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  margin: 20px 0;
+  cursor: pointer;
+}
+
+.sidebar li img {
+  width: 24px;
+  height: 24px;
+}
+
+.sidebar a {
+  color: #ffffff;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 20px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  width: 110%;
+  transition: background-color 0.3s ease;
+}
+.sidebar a:hover,
+.sidebar a:focus {
+  background-color: #262626;
+}
+
+/*==================== FEED ====================*/
+/*==================== FEED ====================*/
+.feed, .feed-section {
+  padding: 20px 0;
+  margin: 0 auto;
+  gap: 20px;
+  width: 100%;
+  max-width: 600px;
+}
+
+
+/*==================== STORIES ====================*/
+.stories, .stories-bar {
+  display: flex;
+  gap: 15px;
+  padding: 15px 0;
+  border-radius: 10px;
+  background-color: #000;
+  overflow-x: auto;
+}
+.story {
+  text-align: center;
+  flex: 0 0 auto;
+}
+.story-border {
+  background: linear-gradient(45deg, #f09433, #e69f3c, #dc2743, #cc2394, #e83cff);
+  padding: 2px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.story-border img, .story img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: block;
+  border: 2px solid #000;
+}
+.story-name, .story p {
+  margin-top: 14px;
+  font-size: 14px;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*==================== POSTS ====================*/
+.post, .card {
+  background-color: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #000;
+}
+.post img, .card img {
+  width: 100%;
+  display: block;
+}
+.post p {
+  padding: 15px;
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Carousel indicators override */
+.carousel-indicators [data-bs-target] {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background-color: #fff !important;
+  opacity: 0.5 !important;
+  border: none !important;
+}
+.carousel-indicators .active {
+  opacity: 1 !important;
+}
+.carousel-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  position: absolute;
+  bottom: 12px;
+  left: 0;
+  width: 100%;
+  transform: translateX(-90px);
+}
+
+/*==================== LEFT PANEL ====================*/
+.left-panel, .right-panel {
+  padding: 20px;
+  border-left: 1px solid #222;
+  width: 250px;
+  position: fixed;
+  top: 80px;
+  right: 40px;
+  z-index: 9999;
+}
+.suggestions {
+  width: 250px;
+  padding: 10px;
+  font-size: 20px;
+}
+.suggestions h6 {
+  margin-bottom: 15px;
+}
+.suggestions p, .suggestion {
+  margin-bottom: 12px;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.suggestions button {
+  background-color: #000;
+  border: none;
+  padding: 5px 10px;
+  color: #0577c3;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: bold;
+}
+.suggestion-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+.suggestion-user img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+.suggestion-user span {
+  flex: 1;
+  color: #e9e9e9;
+  font-size: 14px;
+  font-weight: bold;
+}
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+  color: #888;
+}
+.footer-links a {
+  color: #888;
+  text-decoration: none;
+}
+.footer-links a:hover {
+  text-decoration: underline;
+}
+.copyright {
+  font-size: 11px;
+  color: #888;
+  margin-top: 10px;
+}
+
+/*==================== BOTTOM NAV ====================*/
+.bottom-nav {
+  display: none;
+  justify-content: space-evenly;
+  align-items: center;
+  background-color: #000;
+  color: #fff;
+  padding: 0.5rem 0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  border-top: 1px solid #333;
+  z-index: 9999;
+}
+.bottom-nav a {
+  color: white;
+  text-decoration: none;
+  font-size: 1.25rem;
+}
+
+/*==================== MEDIA QUERIES ====================*/
+@media (max-width: 768px), (max-width: 1199px) {
+  .sidebar {
+    width: 72px;
+    display: none !important;
+  }
+  .sidebar a {
+    width: 50px;
+    height: 50px;
+    justify-content: center;
+    font-size: 1.4rem;
+  }
+  .bottom-nav {
+    display: flex !important;
+  }
+  .right-panel {
+    display: none;
+  }
+}
+@media (max-width: 1200px) {
+  .right-panel {
+    display: none;
+  }
+  .sidebar {
+    width: 80px;
+    padding: 10px;
+  }
+  .sidebar a {
+    justify-content: center;
+    margin-left: 0;
+  }
+  .sidebar h2, .sidebar .link-text {
+    display: none;
+  }
+}

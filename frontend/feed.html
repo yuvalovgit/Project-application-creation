@@ -1,269 +1,45 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
-    <img src="images/download (1).jpg">
-
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Instagram Clone</title>
-  <style>
-    .sidebar img {
-      width: 24px;
-      height: 24px;
-    }
-
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-
-    body {
-      margin: 0;
-      font-family: 'Roboto', sans-serif;
-      background-color: #000;
-      color: white;
-    }
-
-    .container {
-      display: grid;
-      grid-template-columns: 1fr 600px 1fr;
-      min-height: 100vh;
-    }
-
-    .sidebar {
-      padding: 20px;
-      border-right: 1px solid #222;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
-    .sidebar .logo {
-      font-family: 'Pacifico', cursive;
-      font-size: 24px;
-      margin-bottom: 40px;
-      text-align: right;
-    }
-
-    .sidebar ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .sidebar li {
-      display: flex;
-      justify-content: flex-start;
-      align-items: center;
-      font-size: 15px;
-      margin-bottom: 20px;
-      padding: 5px 0;
-      gap: 10px;
-      transition: 0.3s;
-      cursor: pointer;
-    }
-
-    .sidebar li:hover {
-      background-color: #1a1a1a;
-      padding: 5px 10px;
-      border-radius: 8px;
-    }
-
-    .sidebar .profile-img {
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
-    }
-
-    .feed {
-      padding: 20px 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      overflow-y: auto;
-      max-height: 100vh;
-    }
-
-    .stories {
-      display: flex;
-      gap: 15px;
-      overflow-x: auto;
-      margin-bottom: 20px;
-      padding: 0 10px;
-      justify-content: center;
-      max-width: 100%;
-    }
-
-    .story {
-      text-align: center;
-      flex: 0 0 auto;
-      width: 66px;
-    }
-
-    .story img {
-      width: 64px;
-      height: 64px;
-      object-fit: cover;
-      border-radius: 50%;
-      border: 2px solid #d6249f;
-    }
-
-    .story p {
-      font-size: 11px;
-      color: #ccc;
-      margin-top: 4px;
-      line-height: 1.1;
-    }
-
-    .post {
-      background-color: #111;
-      width: 100%;
-      max-width: 470px;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-top: 10px;
-      box-shadow: 0 0 8px rgba(255, 255, 255, 0.03);
-    }
-
-    .post-header {
-      display: flex;
-      align-items: center;
-      padding: 10px;
-      gap: 10px;
-    }
-
-    .avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-    }
-
-    .post-image {
-      width: 100%;
-      height: auto;
-      display: block;
-    }
-
-    .post-footer {
-      padding: 10px 16px;
-      font-size: 14px;
-      color: #ddd;
-    }
-
-    .left-panel {
-      padding: 20px;
-      border-left: 1px solid #222;
-    }
-
-    .suggestions {
-      margin-top: 20px;
-    }
-
-    .suggestion {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .footer {
-      font-size: 12px;
-      margin-top: 40px;
-      color: gray;
-      line-height: 1.6;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Instagram Clone - Feed</title>
+  <!-- קישורים ל־fonts ו־fontawesome -->
+  <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <!-- קישור ל-CSS שלך -->
+  <link rel="stylesheet" href="feed.css" />
 </head>
-<body>
-  <div class="container">
+<body class="bg-black text-white">
+
+  <div class="main-layout">
     <!-- Sidebar -->
-    <div class="sidebar">
-      <div>
-        <div class="logo">Instagram</div>
-        <ul>
-          <li><img src="images/images (1).png"> דף הבית</li>
-          <li><img src="images/searchicon.png"> חיפוש</li>
-          <li><img src="images/compass-map-icon-1024x1024-vubs9t7a.png"> גילוי</li>
-          <li><img src="images/reels.png"> Reels</li>
-          <li><img src="images/messsgeess.png"> הודעות</li>
-          <li><img src="images/appointment-reminders.png"> התראות</li>
-          <li><img src="images/plusplus.png"> יצירה</li>
-          <li><img src="images/download (4).jpg" class="profile-img"> פרופיל</li>
-        </ul>
-      </div>
-      <ul>
-        <li><img src="images/threds.png"> Threads</li>
-        <li><img src="images/images.png"> עוד</li>
-      </ul>
-    </div>
+   <aside class="sidebar">
+  <h2>Instagram</h2>
+  <ul>
+    <li><a href="feed.html"><i class="fas fa-house"></i> <span class="link-text">Home</span></a></li>
+    <li><a href="#"><i class="fas fa-magnifying-glass"></i> <span class="link-text">Search</span></a></li>
+    <li><a href="#"><i class="fas fa-compass"></i> <span class="link-text">Explore</span></a></li>
+    <li><a href="#"><i class="fas fa-clapperboard"></i> <span class="link-text">Reels</span></a></li>
+    <li><a href="#"><i class="fas fa-envelope"></i> <span class="link-text">Messages</span></a></li>
+    <li><a href="#"><i class="far fa-heart"></i> <span class="link-text">Notifications</span></a></li>
+    <li><a href="#"><i class="far fa-square-plus"></i> <span class="link-text">Create</span></a></li>
+    <li><a href="profile.html"><i class="far fa-user"></i> <span class="link-text">Profile</span></a></li>
+    <li><a href="#"><i class="fas fa-bars"></i> <span class="link-text">More</span></a></li>
+  </ul>
+</aside>
 
-    <!-- Feed -->
-    <div class="feed">
-      <div class="stories">
-        <div class="story"><img src="images/download (1).jpg" alt=""><p>alonkarmon</p></div>
-        <div class="story"><img src="images/download (2).jpg" alt=""><p>gefenkb</p></div>
-        <div class="story"><img src="images/download (3).jpg" alt=""><p>ronamir1</p></div>
-        <div class="story"><img src="images/download 3.jpg" alt=""><p>adishofel</p></div>
-        <div class="story"><img src="images/download.jpg" alt=""><p>shireliasaf</p></div>
-        <div class="story"><img src="images/download2.jpg" alt=""><p>mayodiz123</p></div>
-      </div>
-
-      <!-- Post 1 -->
-      <div class="post">
-        <div class="post-header">
-          <img src="images/image''''s.jpg" class="avatar">
-          <span><strong>raz.lahmi</strong> • לפני 20 שניות</span>
-        </div>
-        <img src="images/imageddds.jpg" class="post-image">
-        <div class="post-footer">
-          <p>36 לייקים</p>
-          <p><strong>raz.lahmi</strong> me and my bro</p>
+    <!-- Feed Section -->
+    <section class="feed-section">
+      <div class="container mt-4">
+        <h2 class="mb-4">Your Feed</h2>
+        <div id="postsGrid" class="d-flex flex-column gap-4">
+          <!-- הפוסטים ייטענו כאן דינמית -->
         </div>
       </div>
-
-      <!-- Post 2 -->
-      <div class="post">
-        <div class="post-header">
-          <img src="images/download (1).jpg" class="avatar">
-          <span><strong>ronny.rk</strong> • לפני 2 דקות</span>
-        </div>
-        <img src="images/catpost1.jpg" class="post-image">
-        <div class="post-footer">
-          <p>102 לייקים</p>
-          <p><strong>ronny.rk</strong> chilling with my cat 😺</p>
-        </div>
-      </div>
-
-      <!-- Post 3 -->
-      <div class="post">
-        <div class="post-header">
-          <img src="images/download (2).jpg" class="avatar">
-          <span><strong>maya.love</strong> • לפני 10 דקות</span>
-        </div>
-        <img src="images/catpost2.jpg" class="post-image">
-        <div class="post-footer">
-          <p>88 לייקים</p>
-          <p><strong>maya.love</strong> new recipe up 🥗🍅</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Left Panel -->
-    <div class="left-panel">
-      <strong>mrkittycat3</strong>
-      <p style="color: gray;">Kitty</p>
-      <div class="suggestions">
-        <p style="color: #999; font-size: 13px;">הצעות בשבילך</p>
-        <div class="suggestion">
-          <span>noamrokah1</span><span style="color: deepskyblue">מעקב</span>
-        </div>
-        <div class="suggestion">
-          <span>liav.prizant</span><span style="color: deepskyblue">מעקב</span>
-        </div>
-      </div>
-      <div class="footer">
-        אודות • עזרה • פרטיות • תנאים<br>
-        Meta Verified • שפה • מיקומים<br>
-        © 2025 INSTAGRAM FROM META
-      </div>
-    </div>
+    </section>
   </div>
+
+  <script src="feed.js"></script>
 </body>
 </html>
