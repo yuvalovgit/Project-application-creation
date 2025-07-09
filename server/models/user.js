@@ -8,7 +8,7 @@ const UserSchema = new mongoose.Schema({
   avatar: { type: String },
   bio: { type: String },
   location: { type: String },
-
+  isAdmin:{type:Boolean, default:false},//admin user for dashboard
   followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // רשימת עוקבים
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // עוקב אחרי
   postsCount: { type: Number, default: 0 }, // כמות פוסטים

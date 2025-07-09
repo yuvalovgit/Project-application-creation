@@ -21,11 +21,25 @@ exports.getUserProfile = async (req, res) => {
   }
 };
 
+// finds all userse
+exports.getAllUsers = async (req,res)=>{
+try{
+  const users = await User.find().select('-password'); // מביא משתשמשים ללא סיסמאות
+  res.json(users);
+} catch (err) {
+  res.status(500).json({ error: err.message });
+}
+}
+
 // עדכון פרופיל משתמש כולל תמונת פרופיל שמגיעה ב-req.file
 exports.updateUserProfile = async (req, res) => {
   try {
     const userId = req.params.userId;
     const updateData = { ...req.body };
+
+    if (req.body.isAdmin !== undefined) {
+  updateData.isAdmin = req.body.isAdmin;
+}
 
     if (req.file) {
       updateData.avatar = `/uploads/${req.file.filename}`;

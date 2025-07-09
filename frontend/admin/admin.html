@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-title">Admin Dashboard</div>
+    <div class="navbar-user">👤 Admin</div>
+  </nav>
+  <div class="dashboard-container">
+    <div id="login-form" class="login-form">
+      <h2>Admin Login</h2>
+      <input type="text" id="login-username" placeholder="Username" required>
+      <input type="password" id="login-password" placeholder="Password" required>
+      <button onclick="login()">Login</button>
+      <div id="login-error" class="login-error"></div>
+    </div>
+    <div id="admin-content" style="display:none;">
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Total Users</div>
+          <div class="stat-value" id="total-users">...</div>
+        </div>
+      </div>
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">Posts Per User</div>
+          <canvas id="postsPerUserChart"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Posts Per Day</div>
+          <canvas id="postsPerDayChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <div id="not-admin" class="not-admin">
+      <h2>Access Denied: Admins Only</h2>
+    </div>
+  </div>
+  <script src="admin.js"></script>
+</body>
+</html>
