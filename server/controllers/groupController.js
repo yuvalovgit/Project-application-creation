@@ -36,3 +36,12 @@ exports.getGroups = async (req, res) => {
   const output = groups.map(g => ({ ...g, memberCount: g.members.length }));
   res.json(output);
 };
+// שליפת קבוצות של המשתמש המחובר
+exports.getMyGroups = async (req, res) => {
+  try {
+    const groups = await Group.find({ members: req.user.id }).select('name');
+    res.json(groups);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

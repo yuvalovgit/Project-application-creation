@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
+const authMiddleware = require('../middleware/authMiddleware');
+const upload = require('../middleware/multerConfig');
 const {
   createPost,
   getFeed,
@@ -8,9 +10,6 @@ const {
   addComment,
   deletePost
 } = require('../controllers/postcontroller');
-
-const authMiddleware = require('../middleware/authMiddleware');
-const upload = require('../middleware/multerConfig');
 
 router.post('/', authMiddleware, upload.single('image'), createPost);
 router.get('/feed', authMiddleware, getFeed);

@@ -1,11 +1,20 @@
 const Post = require('../models/post');
 const User = require('../models/user');
+const Group = require('../models/Group');
 
-// יצירת פוסט חדש
-exports.createPost = async (req, res) => {
+// יצירת פוסט חדש (רק למשתמשים בקבוצה)
+const createPost = async (req, res) => {
   try {
     const { content, video, group } = req.body;
     const image = req.file ? `/uploads/${req.file.filename}` : null;
+
+    // בדוק אם הקבוצה קיימת
+    const groupObj = await Group.findById(group);
+    if (!groupObj) return res.status(404).json({ error: 'Group not found' });
+
+    // בדוק אם המשתמש חבר בקבוצה
+    const isMember = groupObj.members.some(m => m.toString() === req.user.id);
+    if (!isMember) return res.status(403).json({ error: 'You are not a member of this group' });
 
     const newPost = await Post.create({
       content,
@@ -23,23 +32,16 @@ exports.createPost = async (req, res) => {
   }
 };
 
-// פיד חכם
-exports.getFeed = async (req, res) => {
+const getFeed = async (req, res) => {
   try {
     const currentUserId = req.user.id;
-    const user = await User.findById(currentUserId);
+    const myGroups = await Group.find({ members: currentUserId }).select('_id');
+    const groupIds = myGroups.map(g => g._id);
 
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    const feedPosts = await Post.find({
-      author: { $in: [...user.following, currentUserId] }
-    })
+    const feedPosts = await Post.find({ group: { $in: groupIds } })
       .sort({ createdAt: -1 })
       .populate('author', 'username avatar')
-      .populate({
-        path: 'comments.author',
-        select: 'username avatar'
-      });
+      .populate({ path: 'comments.author', select: 'username avatar' });
 
     res.json(feedPosts);
   } catch (err) {
@@ -47,8 +49,7 @@ exports.getFeed = async (req, res) => {
   }
 };
 
-// לייק / ביטול לייק
-exports.likePost = async (req, res) => {
+const likePost = async (req, res) => {
   try {
     const postId = req.params.postId;
     const userId = req.user.id;
@@ -67,22 +68,16 @@ exports.likePost = async (req, res) => {
 
     const populatedPost = await Post.findById(postId)
       .populate('author', 'username avatar')
-      .populate({
-        path: 'comments.author',
-        select: 'username avatar'
-      });
+      .populate({ path: 'comments.author', select: 'username avatar' });
 
-    res.json(populatedPost); // 👈 מחזיר את כל הפוסט המאוכלס עם likes
-
+    res.json(populatedPost);
   } catch (err) {
     console.error('Error in likePost:', err);
     res.status(500).json({ message: err.message });
   }
 };
 
-
-// הוספת תגובה
-exports.addComment = async (req, res) => {
+const addComment = async (req, res) => {
   try {
     const postId = req.params.postId;
     const userId = req.user.id;
@@ -98,10 +93,7 @@ exports.addComment = async (req, res) => {
 
     const populatedPost = await Post.findById(postId)
       .populate('author', 'username avatar')
-      .populate({
-        path: 'comments.author',
-        select: 'username avatar'
-      });
+      .populate({ path: 'comments.author', select: 'username avatar' });
 
     res.json(populatedPost);
   } catch (err) {
@@ -109,8 +101,7 @@ exports.addComment = async (req, res) => {
   }
 };
 
-// מחיקת פוסט
-exports.deletePost = async (req, res) => {
+const deletePost = async (req, res) => {
   try {
     const postId = req.params.postId;
     const userId = req.user.id;
@@ -128,4 +119,12 @@ exports.deletePost = async (req, res) => {
     console.error('Error deleting post:', err);
     res.status(500).json({ message: err.message });
   }
+};
+
+module.exports = {
+  createPost,
+  getFeed,
+  likePost,
+  addComment,
+  deletePost
 };
