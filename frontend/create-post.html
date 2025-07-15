@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>הוסף פוסט</title>
+  <link rel="stylesheet" href="create-post.css" />
+</head>
+<body>
+  <h1>🖼️ העלה פוסט חדש</h1>
+  <form id="postForm">
+    <input type="file" id="image" accept="image/*" required />
+    <textarea id="caption" rows="3" placeholder="כתוב תיאור לפוסט..." required></textarea>
+    <select id="group-select" required>
+      <option value="">בחר קבוצה לפרסום</option>
+    </select>
+    <button type="submit">פרסם</button>
+  </form>
+
+  <script src="create-post.js"></script>
+</body>
+</html>

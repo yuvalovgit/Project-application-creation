@@ -1,8 +1,10 @@
 const Post = require('../models/post');
 const User = require('../models/user');
+const Group = require('../models/Group');
 
 // יצירת פוסט חדש (תמונה / וידאו)
 exports.createPost = async (req, res) => {
+
   try {
     const { content, group } = req.body;
     let image = null;
@@ -13,6 +15,14 @@ exports.createPost = async (req, res) => {
       if (req.file.mimetype.startsWith('image/')) image = filePath;
       else if (req.file.mimetype.startsWith('video/')) video = filePath;
     }
+
+    // בדוק אם הקבוצה קיימת
+    const groupObj = await Group.findById(group);
+    if (!groupObj) return res.status(404).json({ error: 'Group not found' });
+
+    // בדוק אם המשתמש חבר בקבוצה
+    const isMember = groupObj.members.some(m => m.toString() === req.user.id);
+    if (!isMember) return res.status(403).json({ error: 'You are not a member of this group' });
 
     const newPost = await Post.create({
       content,
@@ -30,16 +40,17 @@ exports.createPost = async (req, res) => {
   }
 };
 
-// פיד חכם
-exports.getFeed = async (req, res) => {
+const getFeed = async (req, res) => {
   try {
     const currentUserId = req.user.id;
+  HEAD
     const user = await User.findById(currentUserId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const feedPosts = await Post.find({
       author: { $in: [...user.following, currentUserId] }
     })
+
       .sort({ createdAt: -1 })
       .populate('author', 'username avatar')
       .populate({ path: 'comments.author', select: 'username avatar' });
@@ -67,6 +78,7 @@ exports.getSinglePost = async (req, res) => {
 
 // לייק / ביטול לייק
 exports.likePost = async (req, res) => {
+
   try {
     const postId = req.params.postId;
     const userId = req.user.id;
@@ -96,6 +108,7 @@ exports.likePost = async (req, res) => {
 
 // הוספת תגובה
 exports.addComment = async (req, res) => {
+
   try {
     const postId = req.params.postId;
     const userId = req.user.id;
@@ -119,8 +132,7 @@ exports.addComment = async (req, res) => {
   }
 };
 
-// מחיקת פוסט
-exports.deletePost = async (req, res) => {
+const deletePost = async (req, res) => {
   try {
     const postId = req.params.postId;
     const userId = req.user.id;
@@ -138,4 +150,12 @@ exports.deletePost = async (req, res) => {
     console.error('Error deleting post:', err);
     res.status(500).json({ message: err.message });
   }
+};
+
+module.exports = {
+  createPost,
+  getFeed,
+  likePost,
+  addComment,
+  deletePost
 };
