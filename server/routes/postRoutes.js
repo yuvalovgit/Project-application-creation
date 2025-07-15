@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   createPost,
   getFeed,
+  getSinglePost,
   likePost,
   addComment,
   deletePost
@@ -12,8 +13,10 @@ const {
 const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/multerConfig');
 
-router.post('/', authMiddleware, upload.single('image'), createPost);
+// תומך גם ב-image וגם ב-video תחת השם הכללי 'file'
+router.post('/', authMiddleware, upload.single('file'), createPost);
 router.get('/feed', authMiddleware, getFeed);
+router.get('/:postId', authMiddleware, getSinglePost);
 router.post('/:postId/like', authMiddleware, likePost);
 router.post('/:postId/comments', authMiddleware, addComment);
 router.delete('/:postId', authMiddleware, deletePost);

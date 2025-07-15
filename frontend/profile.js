@@ -1,9 +1,12 @@
 const backendURL = 'http://localhost:5000';
 
 function fixImageUrl(url) {
+  console.log("fixImageUrl input:", url); // DEBUG
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return backendURL + url;
+  const fullUrl = backendURL + url;
+  console.log("fixImageUrl output:", fullUrl); // DEBUG
+  return fullUrl;
 }
 
 function getUserIdFromToken(token) {
@@ -80,7 +83,7 @@ function setupFollowButton(user) {
   };
 }
 
-// ====== שינוי תמונת פרופיל ======
+// ====== תמונת פרופיל ======
 const profileModal = document.getElementById('profileModal');
 const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
 const removePhotoBtn = document.getElementById('removePhotoBtn');
@@ -152,7 +155,7 @@ imageUpload.addEventListener('change', async e => {
   }
 });
 
-// ====== פוסטים ======
+// ====== פוסטים (כולל וידאו) ======
 const postsGrid = document.getElementById('postsGrid');
 const uploadPostSidebarBtn = document.getElementById('uploadPostSidebarBtn');
 const postImageUpload = document.getElementById('postImageUpload');
@@ -163,7 +166,7 @@ postImageUpload.addEventListener('change', async e => {
   if (!file) return;
 
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append('file', file); // שימו לב! עכשיו זה תמיד תחת 'file'
   formData.append('content', '');
 
   try {
@@ -172,11 +175,12 @@ postImageUpload.addEventListener('change', async e => {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       body: formData
     });
+
     if (!res.ok) {
       alert('Failed to upload post');
       return;
     }
-    await loadUserPosts();
+    await loadUserPosts(); // רענון הפוסטים בגריד
   } catch (error) {
     console.error(error);
     alert('Error uploading post');
@@ -206,16 +210,16 @@ async function loadUserPosts() {
       const postDiv = document.createElement('div');
       postDiv.className = 'post';
       postDiv.innerHTML = `
-        <div class="post-author">${post.author?.username || 'Unknown'}</div>
-        ${post.image ? `<img src="${fixImageUrl(post.image)}" alt="Post image" class="post-image" />` : ''}
+        ${post.image ? `<img src="${fixImageUrl(post.image)}" class="post-image" />` : ''}
+        ${post.video ? `<video src="${fixImageUrl(post.video)}" controls class="post-video"></video>` : ''}
         <div class="post-content">${post.content || ''}</div>
       `;
 
       postsGrid.appendChild(postDiv);
-      if (post.image) {
-        const img = postDiv.querySelector('img.post-image');
-        img.style.cursor = 'pointer';
-        img.addEventListener('click', () => openPostModal(post));
+      if (post.image || post.video) {
+        const clickable = postDiv.querySelector('img,video');
+        clickable.style.cursor = 'pointer';
+        clickable.addEventListener('click', () => loadAndOpenPost(post._id));
       }
     });
   } catch (error) {
@@ -223,7 +227,27 @@ async function loadUserPosts() {
   }
 }
 
+async function loadAndOpenPost(postId) {
+  try {
+    const res = await fetch(`${backendURL}/api/posts/${postId}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    });
+    if (!res.ok) throw new Error('Failed to fetch post');
+    const post = await res.json();
+    openPostModal(post);
+  } catch (err) {
+    console.error(err);
+    alert('Error loading post');
+  }
+}
+// ======== פונקציה לפתיחת מודל הפוסט כשהולכים לראות אותו בגדול ========
 async function openPostModal(post) {
+  console.log("Opening modal with post:", post); // DEBUG
+
+  // תיקון אם יש מקרים של upLoads במקום uploads
+  if (post.image) post.image = post.image.replace("/upLoads/", "/uploads/");
+  if (post.video) post.video = post.video.replace("/upLoads/", "/uploads/");
+
   currentPostId = post._id;
   const postModal = document.getElementById('postModal');
   const postModalImage = document.getElementById('postModalImage');
@@ -233,7 +257,17 @@ async function openPostModal(post) {
   const likeBtn = document.getElementById('likeBtn');
   const likesCount = document.getElementById('likesCount');
 
-  postModalImage.src = fixImageUrl(post.image);
+  // reset modal
+  postModalImage.innerHTML = '';
+
+  if (post.image && post.image !== "null") {
+    postModalImage.innerHTML = `<img src="${fixImageUrl(post.image)}" style="max-width:100%; max-height:80vh;" />`;
+  } else if (post.video && post.video !== "null") {
+    postModalImage.innerHTML = `<video src="${fixImageUrl(post.video)}" controls style="max-width:100%; max-height:80vh;"></video>`;
+  } else {
+    postModalImage.innerHTML = `<div style="color:white; text-align:center;">No media found</div>`;
+  }
+
   postAuthorAvatar.src = post.author?.avatar ? fixImageUrl(post.author.avatar) : 'default-avatar.png';
   postAuthorUsername.textContent = post.author?.username || 'Unknown';
 
@@ -261,14 +295,7 @@ async function openPostModal(post) {
       });
       if (!res.ok) throw new Error('Failed to like');
       const updatedPost = await res.json();
-
-      likeBtn.innerHTML = (updatedPost.likes || []).includes(userId)
-        ? '<i class="fas fa-heart liked"></i>'
-        : '<i class="far fa-heart"></i>';
-      likesCount.textContent = `${(updatedPost.likes || []).length} likes`;
-
-      likeBtn.style.transform = 'scale(1.3)';
-      setTimeout(() => { likeBtn.style.transform = 'scale(1)'; }, 200);
+      openPostModal(updatedPost);
     } catch (err) {
       console.error(err);
     }
@@ -277,38 +304,15 @@ async function openPostModal(post) {
   postModal.classList.remove('hidden');
 
   const closePostModalBtn = document.getElementById('closePostModalBtn');
-  closePostModalBtn.onclick = () => postModal.classList.add('hidden');
+  closePostModalBtn.onclick = () => {
+    postModal.classList.add('hidden');
+    loadUserPosts();
+  };
   postModal.onclick = e => { if (e.target === postModal) postModal.classList.add('hidden'); };
-
-  const optionsBtn = postModal.querySelector('.modal-options-btn');
-  const deleteModal = document.getElementById('deleteModal');
-  const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-  const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
-
-  optionsBtn.onclick = e => {
-    e.stopPropagation();
-    deleteModal.classList.remove('hidden');
-  };
-
-  confirmDeleteBtn.onclick = async () => {
-    try {
-      const res = await fetch(`${backendURL}/api/posts/${post._id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (!res.ok) throw new Error('Failed to delete');
-      deleteModal.classList.add('hidden');
-      postModal.classList.add('hidden');
-      await loadUserPosts();
-    } catch (err) {
-      alert('Error deleting post');
-      console.error(err);
-    }
-  };
-  cancelDeleteBtn.onclick = () => deleteModal.classList.add('hidden');
-  deleteModal.onclick = e => { if (e.target === deleteModal) deleteModal.classList.add('hidden'); };
 }
 
+
+// ======== טיפול בטופס הוספת תגובה במודל ========
 const commentForm = document.getElementById('commentForm');
 commentForm.addEventListener('submit', async e => {
   e.preventDefault();
@@ -336,4 +340,5 @@ commentForm.addEventListener('submit', async e => {
   }
 });
 
+// ======== הפעלת טעינת הפרופיל ברגע שהעמוד נטען ========
 window.addEventListener('DOMContentLoaded', loadUserProfile);

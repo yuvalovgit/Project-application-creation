@@ -181,7 +181,8 @@ body {
   gap: 8px;
 }
 
-.post img.post-image {
+.post img.post-image,
+.post video.post-video {
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
