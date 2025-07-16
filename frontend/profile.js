@@ -225,6 +225,10 @@ async function loadUserPosts() {
 
 // ==== פתיחת פוסט ====
 async function openPostModal(post) {
+
+  console.log("Opening modal with post:", post);
+
+
   if (post.image) post.image = post.image.replace("/upLoads/", "/uploads/");
   if (post.video) post.video = post.video.replace("/upLoads/", "/uploads/");
 
@@ -240,11 +244,17 @@ async function openPostModal(post) {
   const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
   const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
 
-  postModalImage.innerHTML = post.image
-    ? `<img src="${fixImageUrl(post.image)}" style="max-width:100%; max-height:80vh;" />`
-    : post.video
-      ? `<video src="${fixImageUrl(post.video)}" controls style="max-width:100%; max-height:80vh;"></video>`
-      : `<div style="color:white; text-align:center;">No media found</div>`;
+
+  postModalImage.innerHTML = '';
+
+  if (post.image && post.image !== "null") {
+    postModalImage.innerHTML = `<img src="${fixImageUrl(post.image)}" style="max-width:100%; max-height:80vh;" />`;
+  } else if (post.video && post.video !== "null") {
+    postModalImage.innerHTML = `<video src="${fixImageUrl(post.video)}" controls style="max-width:100%; max-height:80vh;"></video>`;
+  } else {
+    postModalImage.innerHTML = `<div style="color:white; text-align:center;">No media found</div>`;
+  }
+
 
   postAuthorAvatar.src = post.author?.avatar ? fixImageUrl(post.author.avatar) : 'default-avatar.png';
   postAuthorUsername.textContent = post.author?.username || 'Unknown';
@@ -278,32 +288,14 @@ async function openPostModal(post) {
     }
   };
 
+  // 🎯 ➜ הוספת פתיחת מודל מחיקה בכפתור ⋯
   const optionsBtn = postModal.querySelector('.modal-options-btn');
   if (optionsBtn) {
-    optionsBtn.onclick = e => {
-      e.stopPropagation();
-      deleteModal.classList.remove('hidden');
-    };
+    optionsBtn.onclick = () => openDeleteModal(post._id);
   }
 
-  confirmDeleteBtn.onclick = async () => {
-    try {
-      const res = await fetch(`${backendURL}/api/posts/${post._id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (!res.ok) throw new Error('Failed to delete');
-      deleteModal.classList.add('hidden');
-      postModal.classList.add('hidden');
-      await loadUserPosts();
-    } catch (err) {
-      alert('Error deleting post');
-      console.error(err);
-    }
-  };
+  postModal.classList.remove('hidden');
 
-  cancelDeleteBtn.onclick = () => deleteModal.classList.add('hidden');
-  deleteModal.onclick = e => { if (e.target === deleteModal) deleteModal.classList.add('hidden'); };
 
   const closePostModalBtn = document.getElementById('closePostModalBtn');
   closePostModalBtn.onclick = () => postModal.classList.add('hidden');
@@ -312,7 +304,33 @@ async function openPostModal(post) {
   postModal.classList.remove('hidden');
 }
 
-// ====== תגובה ======
+function openDeleteModal(postId) {
+  const deleteModal = document.getElementById('deleteModal');
+  deleteModal.classList.remove('hidden');
+
+  document.getElementById('confirmDeleteBtn').onclick = async () => {
+    try {
+      const res = await fetch(`${backendURL}/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (!res.ok) throw new Error('Failed to delete post');
+      deleteModal.classList.add('hidden');
+      document.getElementById('postModal').classList.add('hidden');
+      loadUserPosts();
+    } catch (err) {
+      alert('Error deleting post');
+      console.error(err);
+    }
+  };
+
+  document.getElementById('cancelDeleteBtn').onclick = () => {
+    deleteModal.classList.add('hidden');
+  };
+}
+
+// ======== טיפול בטופס הוספת תגובה במודל ========
+
 const commentForm = document.getElementById('commentForm');
 commentForm.addEventListener('submit', async e => {
   e.preventDefault();

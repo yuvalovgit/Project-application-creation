@@ -3,7 +3,6 @@ const User = require('../models/user');
 const Group = require('../models/Group');
 
 
-// יצירת פוסט חדש (בקבוצה או פוסט ציבורי)
 const createPost = async (req, res) => {
   try {
     const { content, group } = req.body;
