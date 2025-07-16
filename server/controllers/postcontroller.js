@@ -2,9 +2,8 @@ const Post = require('../models/post');
 const User = require('../models/user');
 const Group = require('../models/Group');
 
-// יצירת פוסט חדש (תמונה / וידאו)
+// יצירת פוסט חדש
 exports.createPost = async (req, res) => {
-
   try {
     const { content, group } = req.body;
     let image = null;
@@ -34,23 +33,23 @@ exports.createPost = async (req, res) => {
 
     const populatedPost = await Post.findById(newPost._id)
       .populate('author', 'username avatar');
+
     res.status(201).json(populatedPost);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 };
 
-const getFeed = async (req, res) => {
+// טעינת הפיד
+exports.getFeed = async (req, res) => {
   try {
     const currentUserId = req.user.id;
-  HEAD
     const user = await User.findById(currentUserId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const feedPosts = await Post.find({
       author: { $in: [...user.following, currentUserId] }
     })
-
       .sort({ createdAt: -1 })
       .populate('author', 'username avatar')
       .populate({ path: 'comments.author', select: 'username avatar' });
@@ -78,7 +77,6 @@ exports.getSinglePost = async (req, res) => {
 
 // לייק / ביטול לייק
 exports.likePost = async (req, res) => {
-
   try {
     const postId = req.params.postId;
     const userId = req.user.id;
@@ -95,11 +93,11 @@ exports.likePost = async (req, res) => {
 
     await post.save();
 
-    const populatedPost = await Post.findById(postId)
+    const updatedPost = await Post.findById(postId)
       .populate('author', 'username avatar')
       .populate({ path: 'comments.author', select: 'username avatar' });
 
-    res.json(populatedPost);
+    res.json(updatedPost);
   } catch (err) {
     console.error('Error in likePost:', err);
     res.status(500).json({ message: err.message });
@@ -108,7 +106,6 @@ exports.likePost = async (req, res) => {
 
 // הוספת תגובה
 exports.addComment = async (req, res) => {
-
   try {
     const postId = req.params.postId;
     const userId = req.user.id;
@@ -122,17 +119,18 @@ exports.addComment = async (req, res) => {
     post.comments.push({ author: userId, text });
     await post.save();
 
-    const populatedPost = await Post.findById(postId)
+    const updatedPost = await Post.findById(postId)
       .populate('author', 'username avatar')
       .populate({ path: 'comments.author', select: 'username avatar' });
 
-    res.json(populatedPost);
+    res.json(updatedPost);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-const deletePost = async (req, res) => {
+// מחיקת פוסט
+exports.deletePost = async (req, res) => {
   try {
     const postId = req.params.postId;
     const userId = req.user.id;
@@ -150,12 +148,4 @@ const deletePost = async (req, res) => {
     console.error('Error deleting post:', err);
     res.status(500).json({ message: err.message });
   }
-};
-
-module.exports = {
-  createPost,
-  getFeed,
-  likePost,
-  addComment,
-  deletePost
 };

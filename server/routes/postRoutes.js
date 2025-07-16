@@ -11,14 +11,11 @@ const {
   addComment,
   deletePost
 } = require('../controllers/postcontroller');
- HEAD
-const authMiddleware = require('../middleware/authMiddleware');
-const upload = require('../middleware/multerConfig');
 
-// תומך גם ב-image וגם ב-video תחת השם הכללי 'file'
+// יצירת פוסט עם קובץ (תמונה / וידאו)
 router.post('/', authMiddleware, upload.single('file'), createPost);
 
-
+// פעולות על הפיד והפוסטים
 router.get('/feed', authMiddleware, getFeed);
 router.get('/:postId', authMiddleware, getSinglePost);
 router.post('/:postId/like', authMiddleware, likePost);
