@@ -3,6 +3,7 @@ const router = express.Router();
 
 const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/multerConfig');
+
 const {
   createPost,
   getFeed,
@@ -12,10 +13,7 @@ const {
   deletePost
 } = require('../controllers/postcontroller');
 
-// יצירת פוסט עם קובץ (תמונה / וידאו)
 router.post('/', authMiddleware, upload.single('file'), createPost);
-
-// פעולות על הפיד והפוסטים
 router.get('/feed', authMiddleware, getFeed);
 router.get('/:postId', authMiddleware, getSinglePost);
 router.post('/:postId/like', authMiddleware, likePost);
