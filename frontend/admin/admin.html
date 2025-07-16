@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Admin Dashboard</title>
@@ -7,6 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="admin.css">
 </head>
+
 <body>
   <nav class="navbar">
     <div class="navbar-title">Admin Dashboard</div>
@@ -21,6 +23,7 @@
       <div id="login-error" class="login-error"></div>
     </div>
     <div id="admin-content" style="display:none;">
+      <div id="userMap" style="height: 400px; margin-bottom: 2rem;"></div>
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-label">Total Users</div>
@@ -36,12 +39,15 @@
           <div class="chart-title">Posts Per Day</div>
           <canvas id="postsPerDayChart"></canvas>
         </div>
-      </div>
+     
     </div>
     <div id="not-admin" class="not-admin">
       <h2>Access Denied: Admins Only</h2>
     </div>
   </div>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="admin.js"></script>
 </body>
+
 </html>

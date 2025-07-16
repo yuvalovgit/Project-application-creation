@@ -1,10 +1,12 @@
 const token = localStorage.getItem("token");
+const backendURL = "http://localhost:5000";
 
 async function loadUserGroups() {
   try {
-    const res = await fetch("http://localhost:5000/api/groups/mine", {
+    const res = await fetch(`${backendURL}/api/groups/mine`, {
       headers: { Authorization: `Bearer ${token}` }
     });
+
     const groups = await res.json();
     const select = document.getElementById("group-select");
 
@@ -23,30 +25,31 @@ async function loadUserGroups() {
 document.getElementById("postForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const image = document.getElementById("image").files[0];
-  const caption = document.getElementById("caption").value.trim();
+  const file = document.getElementById("file").files[0];
+  const content = document.getElementById("content").value.trim();
   const groupId = document.getElementById("group-select").value;
 
-  if (!image || !caption || !groupId) return alert("נא למלא את כל השדות");
+  if (!file || !content || !groupId) {
+    alert("נא למלא את כל השדות");
+    return;
+  }
 
   const formData = new FormData();
-  formData.append("image", image);
-  formData.append("caption", caption);
-  formData.append("groupId", groupId);
+  formData.append("file", file);            // file must match backend multer config
+  formData.append("content", content);
+  formData.append("group", groupId);        // match backend post field
 
   try {
-    const res = await fetch("http://localhost:5000/api/posts", {
+    const res = await fetch(`${backendURL}/api/posts`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
+      headers: { Authorization: `Bearer ${token}` },
       body: formData
     });
 
     const data = await res.json();
     if (res.ok) {
-      alert("הפוסט נוסף בהצלחה!");
-      window.location.href = "profile.html";
+      alert("הפוסט פורסם בהצלחה!");
+      window.location.href = "profile.html"; // redirect to your profile page
     } else {
       alert(data.error || "שגיאה בהעלאת פוסט");
     }

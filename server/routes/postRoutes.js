@@ -13,9 +13,7 @@ const {
   deletePost
 } = require('../controllers/postcontroller');
 
-// תומך גם ב-image וגם ב-video תחת השם הכללי 'file'
 router.post('/', authMiddleware, upload.single('file'), createPost);
-
 router.get('/feed', authMiddleware, getFeed);
 router.get('/:postId', authMiddleware, getSinglePost);
 router.post('/:postId/like', authMiddleware, likePost);
