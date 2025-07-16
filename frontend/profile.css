@@ -270,56 +270,72 @@ body {
 }
 
 /* ======= Confirm Modal קטן ======= */
+/* ======= Confirm Modal קטן (חדש) ======= */
 .modal.confirm-modal .modal-content {
   width: 100%;
-  max-width: 400px;
+  max-width: 350px; /* רוחב נעים כמו אינסטגרם */
   height: auto;
-  max-height: 200px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  background-color: #222;
-  border-radius: 10px;
+  padding: 25px;
+  background-color: #080606; /* רקע לבן כמו באינסטגרם */
+  border-radius: 12px;
   text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* צל יפה */
+  color: #333; /* טקסט כהה */
 }
 
 .modal.confirm-modal h3 {
   margin-bottom: 20px;
   font-size: 1.1rem;
+  color: #c9bdbd;
 }
 
 .modal.confirm-modal button {
-  width: 100%;
-  padding: 10px 0;
-  margin-bottom: 10px;
+  width: 80%;
+  padding: 12px 0;
+  margin-bottom: 12px;
   border-radius: 8px;
   font-weight: 700;
   cursor: pointer;
   transition: background-color 0.3s;
   border: none;
+  font-size: 14px;
 }
 
 .modal.confirm-modal button:last-child {
   margin-bottom: 0;
 }
 
+/* העלאה בצבע כחול */
+.modal.confirm-modal .upload-btn {
+  background: none;
+  color: #0095f6;
+}
+
+.modal.confirm-modal .upload-btn:hover {
+  background: rgba(0,149,246,0.1);
+}
+
+/* הסרה בצבע אדום */
 .modal.confirm-modal .remove-btn {
-  background: #ff4d4d;
-  color: white;
+  background: none;
+  color: #ed4956;
 }
 
 .modal.confirm-modal .remove-btn:hover {
-  background: #e04040;
+  background: rgba(237,73,86,0.1);
 }
 
+/* ביטול בצבע אפור */
 .modal.confirm-modal .cancel-btn {
-  background: #444;
-  color: white;
+  background: none;
+  color: #c9bdbd;
 }
 
 .modal.confirm-modal .cancel-btn:hover {
-  background: #555;
+  background: rgba(0,0,0,0.05);
 }
 
 /* תפריט שלוש נקודות */

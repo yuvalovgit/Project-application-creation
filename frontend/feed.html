@@ -14,21 +14,25 @@
 
   <div class="main-layout">
     <!-- Sidebar -->
-   <aside class="sidebar">
-  <h2>Instagram</h2>
-  <ul>
-    <li><a href="feed.html"><i class="fas fa-house"></i> <span class="link-text">Home</span></a></li>
-    <li><a href="#"><i class="fas fa-magnifying-glass"></i> <span class="link-text">Search</span></a></li>
-    <li><a href="#"><i class="fas fa-compass"></i> <span class="link-text">Explore</span></a></li>
-     <li><a href="creation-group.html"><i class="fas fa-users"></i> <span class="link-text">Groups</span></a></li>
-    <li><a href="#"><i class="fas fa-envelope"></i> <span class="link-text">Messages</span></a></li>
-    <li><a href="#"><i class="far fa-heart"></i> <span class="link-text">Notifications</span></a></li>
-    <li><a href="#"><i class="far fa-square-plus"></i> <span class="link-text">Create</span></a></li>
-    <li><a href="profile.html"><i class="far fa-user"></i> <span class="link-text">Profile</span></a></li>
-    <li><a href="#"><i class="fas fa-bars"></i> <span class="link-text">More</span></a></li>
-  </ul>
-</aside>
-
+   <div class="sidebar">
+  <img src="images/login/instaLogo.png" alt="Instagram Logo" style="width:140px; margin-bottom:40px;" />
+    <ul>
+      <li><a href="feed.html"><i class="fas fa-house"></i> <span class="link-text">Home</span></a></li>
+      <li><a href="#"><i class="fas fa-magnifying-glass"></i> <span class="link-text">Search</span></a></li>
+      <li><a href="#"><i class="fas fa-compass"></i> <span class="link-text">Explore</span></a></li>
+      <li><a href="creation-group.html"><i class="fas fa-users"></i> <span class="link-text">Groups</span></a></li>
+      <li><a href="#"><i class="fas fa-envelope"></i> <span class="link-text">Messages</span></a></li>
+      <li><a href="#"><i class="far fa-heart"></i> <span class="link-text">Notifications</span></a></li>
+      <li>
+        <button id="uploadPostSidebarBtn" class="sidebar-link">
+          <i class="far fa-square-plus"></i> <span class="link-text">Create</span>
+        </button>
+        <input type="file" id="postImageUpload" accept="image/*,video/*" style="display:none" />
+      </li>
+      <li><a href="profile.html"><i class="far fa-user"></i> <span class="link-text">Profile</span></a></li>
+      <li><a href="#"><i class="fas fa-bars"></i> <span class="link-text">More</span></a></li>
+    </ul>
+  </div>
     <!-- Feed Section -->
     <section class="feed-section">
       <div class="container mt-4">

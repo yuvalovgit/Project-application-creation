@@ -36,21 +36,19 @@ button {
 }
 
   
-/*==================== SIDEBAR ====================*/
+/* ===== סיידבר + בוטום נאב ===== */
 .sidebar {
   position: fixed;
   top: 0;
   left: 0;
   background-color: #000;
+  display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 15px;
-  padding-top: 1rem;
-  z-index: 1000;
+  padding: 15px 0;
   width: 220px;
-  height: auto;
-  box-sizing: border-box;
-  display: flex;
+  height: 100vh;
+  z-index: 1000;
 }
 
 .sidebar::after {
@@ -63,7 +61,6 @@ button {
   background-color: #262626;
 }
 
-.sidebar .logo,
 .sidebar h2 {
   font-family: 'Grand Hotel', cursive;
   font-size: 36px;
@@ -76,6 +73,7 @@ button {
   list-style: none;
   padding: 0;
   margin: 0;
+  width: 100%;
 }
 
 .sidebar li {
@@ -84,15 +82,9 @@ button {
   gap: 10px;
   font-size: 16px;
   margin: 20px 0;
-  cursor: pointer;
 }
 
-.sidebar li img {
-  width: 24px;
-  height: 24px;
-}
-
-.sidebar a {
+.sidebar a, .sidebar-link {
   color: #ffffff;
   text-decoration: none;
   display: flex;
@@ -101,10 +93,10 @@ button {
   font-size: 20px;
   padding: 12px 20px;
   border-radius: 12px;
-  width: 110%;
-  transition: background-color 0.3s ease;
+  width: 100%;
+  transition: background-color 0.3s;
 }
-.sidebar a:hover,
-.sidebar a:focus {
+
+.sidebar a:hover, .sidebar-link:hover {
   background-color: #262626;
 }
