@@ -76,7 +76,7 @@ async function showUserMap(users) {
   if (window.userMapInstance) {
     window.userMapInstance.remove();
   }
-  // World view, zoomed out to see all countries
+  // World view
   const map = L.map('userMap').setView([32, 34], 2);
   window.userMapInstance = map;
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
@@ -86,9 +86,9 @@ async function showUserMap(users) {
     if (locKey && countryCoords[locKey]) {
       const coords = countryCoords[locKey];
       L.circleMarker([coords.lat, coords.lng], {
-        radius: 14, // bigger dot
-        color: '#b00', // border color
-        fillColor: '#ffcc00', // fill color
+        radius: 14, 
+        color: '#b00', 
+        fillColor: '#ffcc00', 
         fillOpacity: 0.9,
         weight: 3
       })
@@ -121,6 +121,8 @@ async function loadDashboard() {
     const userLabels = postsPerUser.map(u => u.username);
     const userCounts = postsPerUser.map(u => u.postCount);
 
+
+    // posts charts
     new Chart(document.getElementById('postsPerUserChart'), {
       type: 'bar',
       data: {

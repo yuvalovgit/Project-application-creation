@@ -4,9 +4,11 @@ const authMiddleware = require('../middleware/authMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
 const User = require('../models/user');
 const Post = require('../models/post');
+const userController = require('../controllers/userController');
 
 // routes for monitorin as admin
 
+//checks how many users are registered
 router.get('/stats/users', authMiddleware, adminMiddleware, async (req, res) => {
   const count = await User.countDocuments();
   res.json({ totalUsers: count });
@@ -33,8 +35,10 @@ router.get('/stats/posts-per-user', authMiddleware, adminMiddleware, async (req,
     res.status(500).json({ message: err.message });
   }
 });
-// get posts per user
+//users with locations
+router.get('/stats/users-with-location', authMiddleware, adminMiddleware, userController.getUsersWithLocation);
 
+// get posts per user
 router.get('/stats/posts-per-day', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const posts = await Post.aggregate([

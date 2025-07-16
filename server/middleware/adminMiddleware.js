@@ -1,5 +1,7 @@
 const User = require('../models/user');
 
+// This middleware checks if the user is an admin before allowing access to admin routes
+
 const adminMiddleware = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);

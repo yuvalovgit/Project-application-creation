@@ -222,7 +222,7 @@ async function loadUserPosts() {
     console.error(error);
   }
 }
-
+// opening post to see it in large
 async function openPostModal(post) {
   currentPostId = post._id;
   const postModal = document.getElementById('postModal');

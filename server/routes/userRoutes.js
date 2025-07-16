@@ -4,9 +4,6 @@ const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/multerConfig');
 const User = require('../models/user');
 
-<<<<<<< HEAD
-
-=======
 // NEW: Search Users route (partial match by username, filter by group/date)
 router.get('/search', authMiddleware, async (req, res) => {
   const { username, group, date } = req.query;
@@ -35,7 +32,6 @@ router.get('/search', authMiddleware, async (req, res) => {
 });
 
 // EXISTING ROUTES
->>>>>>> f4bb1eda68c4b13ee82a6c6099e750f1e401390c
 const {
   getUserProfile,
   updateUserProfile,
@@ -45,17 +41,7 @@ const {
   deleteUser,
 } = require('../controllers/userController');
 
-<<<<<<< HEAD
-const authMiddleware = require('../middleware/authMiddleware');
-const upload = require('../middleware/multerConfig');
-const { get } = require('mongoose');
-
-//  /api/users/ and then the rest of the path
-
-router.get('/',authMiddleware, getAllUsers); // Route to get all users for monitoring or admin purposes
-=======
 router.get('/', authMiddleware, getAllUsers); // all users
->>>>>>> f4bb1eda68c4b13ee82a6c6099e750f1e401390c
 router.get('/:userId', authMiddleware, getUserProfile);
 router.put('/:userId', authMiddleware, upload.single('avatar'), updateUserProfile);
 router.post('/:userId/follow', authMiddleware, followUser);
