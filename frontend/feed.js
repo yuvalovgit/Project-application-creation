@@ -1,16 +1,18 @@
 const postsGrid = document.getElementById('postsGrid');
-const backendURL = 'http://localhost:5000';  // כתובת השרת שלך
+const backendURL = 'http://localhost:5000';
 
-// פונקציה לטעינת הפוסטים מהשרת כולל תגובות ולייקים
+// Load feed on page load
+window.addEventListener('DOMContentLoaded', loadFeed);
+
 async function loadFeed() {
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      alert('Please login first');
-      window.location.href = 'login.html';
-      return;
-    }
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('Please login first');
+    window.location.href = 'login.html';
+    return;
+  }
 
+  try {
     const res = await fetch(`${backendURL}/api/posts/feed`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -21,7 +23,7 @@ async function loadFeed() {
     }
 
     const posts = await res.json();
-    postsGrid.innerHTML = ''; // ניקוי פוסטים קודמים
+    postsGrid.innerHTML = '';
 
     posts.forEach(post => {
       const postDiv = document.createElement('div');
@@ -29,20 +31,14 @@ async function loadFeed() {
 
       postDiv.innerHTML = `
         <div class="post-author">${post.author.username}</div>
-        <img src="${backendURL}${post.image}" alt="Post image" class="post-image" />
+        <img src="${backendURL}${post.image || post.video}" alt="Post media" class="post-image" />
         <div class="post-content">${post.content || ''}</div>
         <button class="like-btn" data-postid="${post._id}">
           Like (<span class="like-count">${post.likes.length}</span>)
         </button>
-
         <div class="comments">
-          ${post.comments.map(comment => `
-            <div class="comment">
-              <b>${comment.author.username}</b>: ${comment.text}
-            </div>
-          `).join('')}
+          ${post.comments.map(comment => `<div class="comment"><b>${comment.author.username}</b>: ${comment.text}</div>`).join('')}
         </div>
-
         <form class="comment-form" data-postid="${post._id}">
           <input type="text" name="comment" placeholder="Add a comment..." required />
           <button type="submit">Post</button>
@@ -52,29 +48,18 @@ async function loadFeed() {
       postsGrid.appendChild(postDiv);
     });
 
-    // מאזינים ללייקים
     document.querySelectorAll('.like-btn').forEach(button => {
       button.addEventListener('click', async () => {
         const postId = button.getAttribute('data-postid');
-        try {
-          const res = await fetch(`${backendURL}/api/posts/${postId}/like`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (!res.ok) {
-            alert('Failed to like post');
-            return;
-          }
-          const updatedPost = await res.json();
-          button.querySelector('.like-count').textContent = updatedPost.likesCount;
-        } catch (error) {
-          alert('Error liking post');
-          console.error(error);
-        }
+        const res = await fetch(`${backendURL}/api/posts/${postId}/like`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const updated = await res.json();
+        button.querySelector('.like-count').textContent = updated.likesCount;
       });
     });
 
-    // מאזינים לטפסי תגובות
     document.querySelectorAll('.comment-form').forEach(form => {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -83,38 +68,71 @@ async function loadFeed() {
         const text = input.value.trim();
         if (!text) return;
 
-        try {
-          const res = await fetch(`${backendURL}/api/posts/${postId}/comments`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`
-            },
-            body: JSON.stringify({ text })
-          });
+        await fetch(`${backendURL}/api/posts/${postId}/comments`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ text })
+        });
 
-          if (!res.ok) {
-            alert('Failed to post comment');
-            return;
-          }
-
-          // רענון הפיד לאחר הוספת תגובה חדשה
-          await loadFeed();
-
-        } catch (error) {
-          alert('Error posting comment');
-          console.error(error);
-        }
-
-        input.value = ''; // ניקוי השדה
+        await loadFeed(); // reload to show comment
+        input.value = '';
       });
     });
 
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
     alert('Error loading feed');
   }
 }
 
-// טעינת הפיד בעת טעינת הדף
-window.addEventListener('DOMContentLoaded', loadFeed);
+// Search Modal Logic
+function openUserSearchModal() {
+  document.getElementById('modalOverlay').style.display = 'block';
+  document.getElementById('userSearchModal').style.display = 'block';
+}
+
+function closeUserSearchModal() {
+  document.getElementById('modalOverlay').style.display = 'none';
+  document.getElementById('userSearchModal').style.display = 'none';
+  document.getElementById('searchResults').innerHTML = '';
+}
+
+async function searchUsers() {
+  const username = document.getElementById('search-username').value;
+  const group = document.getElementById('search-group').value;
+  const date = document.getElementById('search-date').value;
+  const token = localStorage.getItem('token');
+
+  try {
+    const res = await fetch(`${backendURL}/api/users/search?username=${username}&group=${group}&date=${date}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const users = await res.json();
+    const container = document.getElementById('searchResults');
+
+    if (!users.length) {
+      container.innerHTML = '<p>No users found.</p>';
+      return;
+    }
+
+    container.innerHTML = users.map(user => {
+      const groupCount = user.groups?.length || 0;
+      const created = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown';
+      return `
+        <div style="border-bottom: 1px solid #555; padding: 6px 0;">
+          <strong>${user.username}</strong><br/>
+          Groups: ${groupCount}<br/>
+          Registered: ${created}
+        </div>
+      `;
+    }).join('');
+
+  } catch (err) {
+    alert('Search failed');
+    console.error(err);
+  }
+}
