@@ -242,9 +242,8 @@ async function loadAndOpenPost(postId) {
 }
 // ======== פונקציה לפתיחת מודל הפוסט כשהולכים לראות אותו בגדול ========
 async function openPostModal(post) {
-  console.log("Opening modal with post:", post); // DEBUG
+  console.log("Opening modal with post:", post);
 
-  // תיקון אם יש מקרים של upLoads במקום uploads
   if (post.image) post.image = post.image.replace("/upLoads/", "/uploads/");
   if (post.video) post.video = post.video.replace("/upLoads/", "/uploads/");
 
@@ -257,7 +256,6 @@ async function openPostModal(post) {
   const likeBtn = document.getElementById('likeBtn');
   const likesCount = document.getElementById('likesCount');
 
-  // reset modal
   postModalImage.innerHTML = '';
 
   if (post.image && post.image !== "null") {
@@ -301,6 +299,12 @@ async function openPostModal(post) {
     }
   };
 
+  // 🎯 ➜ הוספת פתיחת מודל מחיקה בכפתור ⋯
+  const optionsBtn = postModal.querySelector('.modal-options-btn');
+  if (optionsBtn) {
+    optionsBtn.onclick = () => openDeleteModal(post._id);
+  }
+
   postModal.classList.remove('hidden');
 
   const closePostModalBtn = document.getElementById('closePostModalBtn');
@@ -311,6 +315,30 @@ async function openPostModal(post) {
   postModal.onclick = e => { if (e.target === postModal) postModal.classList.add('hidden'); };
 }
 
+function openDeleteModal(postId) {
+  const deleteModal = document.getElementById('deleteModal');
+  deleteModal.classList.remove('hidden');
+
+  document.getElementById('confirmDeleteBtn').onclick = async () => {
+    try {
+      const res = await fetch(`${backendURL}/api/posts/${postId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (!res.ok) throw new Error('Failed to delete post');
+      deleteModal.classList.add('hidden');
+      document.getElementById('postModal').classList.add('hidden');
+      loadUserPosts();
+    } catch (err) {
+      alert('Error deleting post');
+      console.error(err);
+    }
+  };
+
+  document.getElementById('cancelDeleteBtn').onclick = () => {
+    deleteModal.classList.add('hidden');
+  };
+}
 
 // ======== טיפול בטופס הוספת תגובה במודל ========
 const commentForm = document.getElementById('commentForm');

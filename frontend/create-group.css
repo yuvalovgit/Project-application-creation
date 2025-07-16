@@ -34,3 +34,77 @@ button {
   border-radius: 6px;
   margin-bottom: 10px;
 }
+
+  
+/*==================== SIDEBAR ====================*/
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: #000;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  padding-top: 1rem;
+  z-index: 1000;
+  width: 220px;
+  height: auto;
+  box-sizing: border-box;
+  display: flex;
+}
+
+.sidebar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -25px;
+  width: 1px;
+  height: 100%;
+  background-color: #262626;
+}
+
+.sidebar .logo,
+.sidebar h2 {
+  font-family: 'Grand Hotel', cursive;
+  font-size: 36px;
+  margin-bottom: 60px;
+  color: #fff;
+  margin-left: -20%;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  margin: 20px 0;
+  cursor: pointer;
+}
+
+.sidebar li img {
+  width: 24px;
+  height: 24px;
+}
+
+.sidebar a {
+  color: #ffffff;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 20px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  width: 110%;
+  transition: background-color 0.3s ease;
+}
+.sidebar a:hover,
+.sidebar a:focus {
+  background-color: #262626;
+}

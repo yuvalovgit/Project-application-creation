@@ -4,7 +4,7 @@ const userId = localStorage.getItem("userId");
 // צור קבוצה חדשה
 async function createGroup() {
   const name = document.getElementById("group-name").value.trim();
-  const description = ""; // אופציונלי - אפשר להוסיף שדה בעתיד
+  const description = ""; // אופציונלי - אפשר להוסיף בעתיד
 
   if (!name) return alert("יש להזין שם קבוצה");
 
@@ -23,13 +23,13 @@ async function createGroup() {
     if (res.ok) {
       alert("הקבוצה נוצרה בהצלחה");
       document.getElementById("group-name").value = "";
-      loadGroups();
+      await loadGroups();
     } else {
       alert(data.error || "שגיאה ביצירת קבוצה");
     }
   } catch (err) {
     console.error("Create group error:", err);
-    alert("שגיאה בשרת");
+    alert("שגיאת שרת");
   }
 }
 
@@ -45,7 +45,9 @@ async function loadGroups() {
     container.innerHTML = "<h2>קבוצות קיימות</h2>";
 
     groups.forEach(group => {
-      const isMember = group.members?.some(memberId => memberId === userId);
+        console.log("👉 group.members:", group.members);
+      console.log("👉 userId:", userId);
+      const isMember = (group.members || []).map(id => id.toString()).includes(userId);
 
       const div = document.createElement("div");
       div.className = "group-item";
@@ -53,7 +55,7 @@ async function loadGroups() {
       div.innerHTML = `
         <strong>${group.name}</strong><br/>
         ${isMember
-          ? '<span style="color: lightgreen;">✅ אתה חבר בקבוצה</span>'
+          ? `<button onclick="leaveGroup('${group._id}')">🚪 צא מהקבוצה</button>`
           : `<button onclick="joinGroup('${group._id}')">הצטרף</button>`}
       `;
 
@@ -81,12 +83,38 @@ async function joinGroup(groupId) {
 
     if (res.ok) {
       alert("הצטרפת לקבוצה בהצלחה");
-      loadGroups();
+      await loadGroups(); // פה שמנו await
     } else {
       alert(data.error || "שגיאה בהצטרפות לקבוצה");
     }
   } catch (err) {
     console.error("Join group error:", err);
+    alert("שגיאת שרת");
+  }
+}
+
+// עזיבת קבוצה
+async function leaveGroup(groupId) {
+  try {
+    const res = await fetch("http://localhost:5000/api/groups/leave", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ groupId })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert("עזבת את הקבוצה בהצלחה");
+      await loadGroups(); // גם כאן שמנו await
+    } else {
+      alert(data.error || "שגיאה בעזיבת קבוצה");
+    }
+  } catch (err) {
+    console.error("Leave group error:", err);
     alert("שגיאת שרת");
   }
 }

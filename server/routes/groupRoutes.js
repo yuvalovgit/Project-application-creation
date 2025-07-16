@@ -5,12 +5,14 @@ const {
   createGroup,
   joinGroup,
   getGroups,
-  getMyGroups
+  getMyGroups,
+  leaveGroup
 } = require('../controllers/groupController');
 
 router.post('/create', authMiddleware, createGroup);
 router.post('/join', authMiddleware, joinGroup);
+router.post('/leave', authMiddleware, leaveGroup);
 router.get('/', authMiddleware, getGroups);
-router.get('/mine', authMiddleware, getMyGroups); // ✅ this supports group select dropdown in frontend
+router.get('/mine', authMiddleware, getMyGroups);
 
 module.exports = router;
