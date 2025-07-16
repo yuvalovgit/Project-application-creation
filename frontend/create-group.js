@@ -1,80 +1,112 @@
+const backendURL = 'http://localhost:5000';
 const token = localStorage.getItem("token");
 const userId = localStorage.getItem("userId");
 
-// צור קבוצה חדשה
-async function createGroup() {
-  const name = document.getElementById("group-name").value.trim();
-  const description = ""; // אופציונלי - אפשר להוסיף בעתיד
+// פתיחה וסגירה של מודל
+const modal = document.getElementById("groupModal");
+const openBtn = document.getElementById("openModalBtn");
+const closeBtn = document.getElementById("closeModalBtn");
 
-  if (!name) return alert("יש להזין שם קבוצה");
+openBtn.addEventListener("click", () => modal.style.display = "block");
+closeBtn.addEventListener("click", () => modal.style.display = "none");
+window.addEventListener("click", (e) => {
+  if (e.target === modal) modal.style.display = "none";
+});
+
+// יצירת קבוצה חדשה
+document.getElementById("createGroupForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const name = document.getElementById("group-name").value.trim();
+  const description = document.getElementById("group-description").value.trim();
+  const topic = document.getElementById("group-topic").value;
+  const image = document.getElementById("group-image").files[0];
+
+  if (!name || !description || !topic) {
+    return alert("Please fill all required fields.");
+  }
+
+  const formData = new FormData();
+  formData.append("name", name);
+  formData.append("description", description);
+  formData.append("topic", topic);
+  if (image) formData.append("image", image);
 
   try {
-    const res = await fetch("http://localhost:5000/api/groups/create", {
+    const res = await fetch(`${backendURL}/api/groups/create`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({ name, description })
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
     });
 
     const data = await res.json();
 
     if (res.ok) {
-      alert("הקבוצה נוצרה בהצלחה");
-      document.getElementById("group-name").value = "";
+      alert("Group created successfully");
+      document.getElementById("createGroupForm").reset();
+      modal.style.display = "none";
       await loadGroups();
     } else {
-      alert(data.error || "שגיאה ביצירת קבוצה");
+      alert(data.error || "Failed to create group");
     }
   } catch (err) {
     console.error("Create group error:", err);
-    alert("שגיאת שרת");
+    alert("Server error");
   }
-}
+});
 
-// טען קבוצות קיימות
+// טוען קבוצות קיימות ומכניס ל־HTML
 async function loadGroups() {
   try {
-    const res = await fetch("http://localhost:5000/api/groups", {
+    const res = await fetch(`${backendURL}/api/groups`, {
       headers: { Authorization: `Bearer ${token}` }
     });
 
     const groups = await res.json();
     const container = document.getElementById("group-list");
-    container.innerHTML = "<h2>קבוצות קיימות</h2>";
+    container.innerHTML = "";
 
     groups.forEach(group => {
-        console.log("👉 group.members:", group.members);
-      console.log("👉 userId:", userId);
       const isMember = (group.members || []).map(id => id.toString()).includes(userId);
 
       const div = document.createElement("div");
       div.className = "group-item";
 
       div.innerHTML = `
-        <strong>${group.name}</strong><br/>
-        ${isMember
-          ? `<button onclick="leaveGroup('${group._id}')">🚪 צא מהקבוצה</button>`
-          : `<button onclick="joinGroup('${group._id}')">הצטרף</button>`}
+        <img src="${group.image ? backendURL + group.image : backendURL + '/uploads/default-avatar.png'}" class="group-image" />
+        <div class="group-name">
+          <a href="create-post.html?groupId=${group._id}">
+            ${group.name}
+          </a>
+        </div>
+        <div class="group-category">#${group.topic || 'general'}</div>
+        <div class="group-buttons">
+          <button onclick="toggleDescription(this)">Show Description</button>
+          ${isMember
+            ? `<button onclick="leaveGroup('${group._id}')">Leave Group</button>`
+            : `<button onclick="joinGroup('${group._id}')">Join Group</button>`}
+        </div>
+        <div class="group-description-box" style="display: none;">
+          ${group.description || "No description"}
+        </div>
       `;
 
       container.appendChild(div);
     });
   } catch (err) {
     console.error("Load groups error:", err);
-    alert("שגיאת שרת");
+    alert("Server error");
   }
 }
 
 // הצטרפות לקבוצה
 async function joinGroup(groupId) {
   try {
-    const res = await fetch("http://localhost:5000/api/groups/join", {
+    const res = await fetch(`${backendURL}/api/groups/join`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({ groupId })
     });
@@ -82,25 +114,25 @@ async function joinGroup(groupId) {
     const data = await res.json();
 
     if (res.ok) {
-      alert("הצטרפת לקבוצה בהצלחה");
-      await loadGroups(); // פה שמנו await
+      alert("Joined group successfully");
+      await loadGroups();
     } else {
-      alert(data.error || "שגיאה בהצטרפות לקבוצה");
+      alert(data.error || "Failed to join group");
     }
   } catch (err) {
     console.error("Join group error:", err);
-    alert("שגיאת שרת");
+    alert("Server error");
   }
 }
 
 // עזיבת קבוצה
 async function leaveGroup(groupId) {
   try {
-    const res = await fetch("http://localhost:5000/api/groups/leave", {
+    const res = await fetch(`${backendURL}/api/groups/leave`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({ groupId })
     });
@@ -108,16 +140,23 @@ async function leaveGroup(groupId) {
     const data = await res.json();
 
     if (res.ok) {
-      alert("עזבת את הקבוצה בהצלחה");
-      await loadGroups(); // גם כאן שמנו await
+      alert("Left group successfully");
+      await loadGroups();
     } else {
-      alert(data.error || "שגיאה בעזיבת קבוצה");
+      alert(data.error || "Failed to leave group");
     }
   } catch (err) {
     console.error("Leave group error:", err);
-    alert("שגיאת שרת");
+    alert("Server error");
   }
 }
 
-// טען קבוצות בטעינת עמוד
+// הצגת תיאור בלחיצה
+function toggleDescription(button) {
+  const descBox = button.parentElement.nextElementSibling;
+  const isVisible = descBox.style.display === 'block';
+  descBox.style.display = isVisible ? 'none' : 'block';
+  button.innerText = isVisible ? 'Show Description' : 'Hide Description';
+}
+
 loadGroups();

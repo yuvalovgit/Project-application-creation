@@ -10,7 +10,8 @@ app.use(cors());
 app.use(express.json());
 
 // ⬇️ הוספה חשובה ⬇️
-app.use('/uploads', express.static(__dirname + '/uploads'));
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 console.log("🌐 Connecting to MongoDB...");
 mongoose.connect(process.env.MONGO_URI)

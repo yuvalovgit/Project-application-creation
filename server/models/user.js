@@ -8,12 +8,14 @@ const UserSchema = new mongoose.Schema({
   avatar: { type: String },
   bio: { type: String },
   location: { type: String },
-  isAdmin:{type:Boolean, default:false},//admin user for dashboard
-  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // רשימת עוקבים
-  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // עוקב אחרי
-  postsCount: { type: Number, default: 0 }, // כמות פוסטים
+  isAdmin: { type: Boolean, default: false },
+  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  postsCount: { type: Number, default: 0 },
 
   groups: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Group' }]
+}, {
+  timestamps: true // Adds createdAt and updatedAt fields automatically
 });
 
 module.exports = mongoose.model('User', UserSchema);

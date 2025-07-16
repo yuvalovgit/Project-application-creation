@@ -9,51 +9,57 @@ const createPost = async (req, res) => {
     let image = null;
     let video = null;
 
-    if (req.file) {
-      const filePath = `/uploads/${req.file.filename}`;
-      if (req.file.mimetype.startsWith('image/')) image = filePath;
-      else if (req.file.mimetype.startsWith('video/')) video = filePath;
+  if (req.file) {
+  const filename = req.file.filename;
+  const filePath = `/uploads/posts/${filename}`;
+  if (req.file.mimetype.startsWith('image/')) image = filePath;
+  else if (req.file.mimetype.startsWith('video/')) video = filePath;
+}
+
+    if (group) {
+      const groupObj = await Group.findById(group);
+      if (!groupObj) return res.status(404).json({ error: 'Group not found' });
+
+      const isMember = groupObj.members.some(m => m.toString() === req.user.id);
+      if (!isMember) return res.status(403).json({ error: 'You are not a member of this group' });
     }
-
-    // בדוק אם הקבוצה קיימת
-    const groupObj = await Group.findById(group);
-    if (!groupObj) return res.status(404).json({ error: 'Group not found' });
-
-    // בדוק אם המשתמש חבר בקבוצה
-    const isMember = groupObj.members.some(m => m.toString() === req.user.id);
-    if (!isMember) return res.status(403).json({ error: 'You are not a member of this group' });
 
     const newPost = await Post.create({
       content,
       image,
       video,
-      group,
+      group: group || null,
       author: req.user.id
     });
 
-    const populatedPost = await Post.findById(newPost._id)
-      .populate('author', 'username avatar');
+    const populatedPost = await Post.findById(newPost._id).populate('author', 'username avatar');
     res.status(201).json(populatedPost);
   } catch (err) {
+    console.error('Error creating post:', err);
     res.status(400).json({ error: err.message });
   }
 };
 
+// פיד – כולל פוסטים של חברים ושל קבוצות
 const getFeed = async (req, res) => {
   try {
     const currentUserId = req.user.id;
     const user = await User.findById(currentUserId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    // שליפת כל הקבוצות שהמשתמש חבר בהן
+    const groups = await Group.find({ members: user._id }, '_id');
+    const groupIds = groups.map(g => g._id);
+
     const feedPosts = await Post.find({
       $or: [
         { author: { $in: [...user.following, currentUserId] } },
-        { group: { $in: user.groups } }
+        { group: { $in: groupIds } }
       ]
     })
-    .sort({ createdAt: -1 })
-    .populate('author', 'username avatar')
-    .populate({ path: 'comments.author', select: 'username avatar' });
+      .sort({ createdAt: -1 })
+      .populate('author', 'username avatar')
+      .populate({ path: 'comments.author', select: 'username avatar' });
 
     res.json(feedPosts);
   } catch (err) {
@@ -95,11 +101,11 @@ const likePost = async (req, res) => {
 
     await post.save();
 
-    const populatedPost = await Post.findById(postId)
+    const updatedPost = await Post.findById(postId)
       .populate('author', 'username avatar')
       .populate({ path: 'comments.author', select: 'username avatar' });
 
-    res.json(populatedPost);
+    res.json(updatedPost);
   } catch (err) {
     console.error('Error in likePost:', err);
     res.status(500).json({ message: err.message });
@@ -121,16 +127,17 @@ const addComment = async (req, res) => {
     post.comments.push({ author: userId, text });
     await post.save();
 
-    const populatedPost = await Post.findById(postId)
+    const updatedPost = await Post.findById(postId)
       .populate('author', 'username avatar')
       .populate({ path: 'comments.author', select: 'username avatar' });
 
-    res.json(populatedPost);
+    res.json(updatedPost);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
+// מחיקת פוסט (של עצמך)
 const deletePost = async (req, res) => {
   try {
     const postId = req.params.postId;
@@ -151,6 +158,7 @@ const deletePost = async (req, res) => {
   }
 };
 
+// ייצוא
 module.exports = {
   createPost,
   getFeed,

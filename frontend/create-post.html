@@ -1,22 +1,122 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>הוסף פוסט</title>
+  <title>Group Profile</title>
   <link rel="stylesheet" href="create-post.css" />
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
-  <h1>🖼️ העלה פוסט חדש</h1>
-  <form id="postForm">
-    <input type="file" id="image" accept="image/*" required />
-    <textarea id="caption" rows="3" placeholder="כתוב תיאור לפוסט..." required></textarea>
-    <select id="group-select" required>
-      <option value="">בחר קבוצה לפרסום</option>
-    </select>
-    <button type="submit">פרסם</button>
-  </form>
 
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Instagram</h2>
+    <ul>
+      <li><a href="feed.html"><i class="fas fa-house"></i> <span class="link-text">Home</span></a></li>
+      <li><a href="#"><i class="fas fa-magnifying-glass"></i> <span class="link-text">Search</span></a></li>
+      <li><a href="#"><i class="fas fa-compass"></i> <span class="link-text">Explore</span></a></li>
+      <li><a href="creation-group.html"><i class="fas fa-users"></i> <span class="link-text">Groups</span></a></li>
+      <li><a href="#"><i class="fas fa-envelope"></i> <span class="link-text">Messages</span></a></li>
+      <li><a href="#"><i class="far fa-heart"></i> <span class="link-text">Notifications</span></a></li>
+      <li>
+        <button id="uploadPostSidebarBtn" class="sidebar-link">
+          <i class="far fa-square-plus"></i> <span class="link-text">Create</span>
+        </button>
+        <input type="file" id="postImageUpload" accept="image/*,video/*" style="display: none;" />
+      </li>
+      <li><a href="profile.html"><i class="far fa-user"></i> <span class="link-text">Profile</span></a></li>
+      <li><a href="#"><i class="fas fa-bars"></i> <span class="link-text">More</span></a></li>
+    </ul>
+  </div>
+
+  <!-- Main Content Wrapper -->
+  <div class="main-content">
+
+    <!-- Group Profile Section -->
+    <div class="group-container">
+
+      <!-- Cover Image -->
+      <div class="group-cover">
+        <img id="groupCoverImage" src="" alt="Group Cover" />
+      </div>
+
+      <!-- Group Header -->
+      <div class="group-header">
+        <div class="group-avatar-container">
+          <img id="groupImage" src="" alt="Group Image" />
+        </div>
+
+        <div class="group-info">
+          <div class="group-top-row">
+            <h2 id="groupName">Group Name</h2>
+            <button id="joinLeaveBtn" class="join-btn">Join Group</button>
+            <button id="editGroupBtn" class="edit-btn" style="display: none;">
+              <i class="fas fa-pen"></i> Edit Group
+            </button>
+          </div>
+
+          <div class="group-admin" id="adminInfo"></div>
+          <div class="group-category" id="groupCategory">#music</div>
+          <div class="group-description" id="groupDescription">This is the group description...</div>
+          <div class="group-stats">
+            <span id="groupMembersCount">0</span> members ·
+            <span id="groupPostsCount">0</span> posts
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Post Box -->
+    <div class="create-post-box">
+      <label for="postMedia" class="media-preview">
+        <span>Click to upload image/video</span>
+        <img id="previewImage" src="" style="display:none;" />
+        <video id="previewVideo" controls style="display:none;"></video>
+      </label>
+      <input type="file" id="postMedia" accept="image/*,video/*" style="display:none;" />
+      <textarea id="postContent" placeholder="Write a caption..."></textarea>
+      <button id="submitPostBtn">Post</button>
+    </div>
+
+  <!-- Group Feed -->
+<h3 class="section-title">Group Feed</h3>
+<div id="groupPostsFeed" class="post-feed">
+  <!-- Posts will load here -->
+</div>
+
+
+  </div> <!-- End of main-content -->
+
+  <!-- Hidden File Inputs -->
+  <input type="file" id="profileFileInput" accept="image/*" style="display:none">
+  <input type="file" id="coverFileInput" accept="image/*" style="display:none">
+
+  <!-- Change Image Modal -->
+  <div id="changeImageModal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3 id="modalTitle">Change Photo</h3>
+      <button id="uploadPhotoBtn">Upload Photo</button>
+      <button id="removePhotoBtn">Remove Current Photo</button>
+      <button id="cancelModalBtn">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Edit Group Modal -->
+  <div id="editGroupModal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>Edit Group</h3>
+      <input type="text" id="editGroupName" placeholder="Group Name" />
+      <textarea id="editGroupDescription" placeholder="Group Description"></textarea>
+      <div id="editGroupMembersList"
+           style="margin-top: 10px; text-align: left; max-height: 120px; overflow-y: auto;"></div>
+      <button id="saveGroupChangesBtn">Save Changes</button>
+      <button onclick="closeEditModal()">Cancel</button>
+    </div>
+  </div>
+  
+
+  <!-- JS -->
   <script src="create-post.js"></script>
 </body>
 </html>

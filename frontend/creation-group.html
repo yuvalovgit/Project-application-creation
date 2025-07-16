@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>קבוצות</title>
-  <link rel="stylesheet" href="create-group.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <title>Groups</title>
+  <link rel="stylesheet" href="create-group.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
 
-<div class="sidebar">
+  <!-- Sidebar -->
+  <div class="sidebar">
     <h2>Instagram</h2>
     <ul>
       <li><a href="feed.html"><i class="fas fa-house"></i> <span class="link-text">Home</span></a></li>
@@ -21,25 +22,55 @@
         <button id="uploadPostSidebarBtn" class="sidebar-link">
           <i class="far fa-square-plus"></i> <span class="link-text">Create</span>
         </button>
-        <input type="file" id="postImageUpload" accept="image/*,video/*" style="display:none" />
+        <input type="file" id="postImageUpload" accept="image/*,video/*" style="display: none;" />
       </li>
       <li><a href="profile.html"><i class="far fa-user"></i> <span class="link-text">Profile</span></a></li>
       <li><a href="#"><i class="fas fa-bars"></i> <span class="link-text">More</span></a></li>
     </ul>
   </div>
 
+  <!-- Main Content -->
   <div class="main-content">
-    <h1>צור קבוצה חדשה</h1>
 
-    <input type="text" id="group-name" placeholder="שם הקבוצה">
-    <button onclick="createGroup()">צור קבוצה</button>
+    <!-- כפתור פתיחת מודל -->
+<div class="create-btn-container">
+  <button id="openModalBtn" class="create-btn custom-pos">
+  <i class="fas fa-plus"></i> Create Group
+</button>
+</div>
 
+    <!-- כותרת קבוצות -->
+    <h2 class="group-title"><i class="fas fa-users"></i> Existing Groups</h2>
+
+    <!-- קבוצות ייטענו כאן -->
     <div class="group-list" id="group-list">
-      <h2>קבוצות קיימות</h2>
-      <!-- קבוצות יכנסו לכאן -->
+      <!-- Filled dynamically with JS -->
     </div>
   </div>
 
+  <!-- Modal: Create Group -->
+  <div id="groupModal" class="modal">
+    <div class="modal-content">
+      <span id="closeModalBtn" class="close">&times;</span>
+      <h2>Create a New Group</h2>
+      <form id="createGroupForm">
+        <input type="text" id="group-name" placeholder="Group Name" required />
+        <textarea id="group-description" rows="3" placeholder="Group Description" required></textarea>
+        <select id="group-topic" required>
+          <option value="">Select Topic</option>
+          <option value="music">Music</option>
+          <option value="sports">Sports</option>
+          <option value="technology">Technology</option>
+          <option value="travel">Travel</option>
+          <option value="general">General</option>
+        </select>
+        <input type="file" id="group-image" accept="image/*" />
+        <button type="submit">Create Group</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- JS -->
   <script src="create-group.js"></script>
 </body>
 </html>

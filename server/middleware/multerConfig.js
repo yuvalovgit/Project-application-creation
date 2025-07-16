@@ -2,26 +2,29 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// נתיב תיקיית ההעלאות
+// 📁 התיקייה הראשית להעלאות
 const uploadDir = path.join(__dirname, '..', 'uploads');
+// יצירת התיקייה (כולל תתי-תיקיות) אם לא קיימת
+fs.mkdirSync(uploadDir, { recursive: true });
 
-// יצירת תיקיית uploads אם לא קיימת
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
-
-// הגדרת אחסון multer
+// ⚙️ הגדרת אחסון עם חלוקה לפי סוג הקובץ
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir);
+    let subfolder = 'posts';
+    if (file.fieldname === 'groupImage') subfolder = 'profiles';
+    else if (file.fieldname === 'groupCover') subfolder = 'covers';
+
+    const dest = path.join(uploadDir, subfolder);
+    fs.mkdirSync(dest, { recursive: true });
+    cb(null, dest);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+    const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, uniqueName + path.extname(file.originalname));
   }
 });
 
-// סינון סוגי קבצים - תמונות וגם סרטונים
+// 🔒 סינון — רק תמונות וסרטונים
 const fileFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
     cb(null, true);
@@ -30,7 +33,16 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// יצירת middleware multer
-const upload = multer({ storage, fileFilter });
+// ⏱️ הגבלת גודל: עד 10MB לקובץ
+const limits = {
+  fileSize: 10 * 1024 * 1024
+};
+
+// 🎯 יצירת המידלוור
+const upload = multer({
+  storage,
+  fileFilter,
+  limits
+});
 
 module.exports = upload;

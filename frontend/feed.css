@@ -313,3 +313,66 @@ body {
     display: none;
   }
 }
+.group-post-card {
+  background: white;
+  color: black;
+  border-radius: 12px;
+  padding: 16px;
+  width: 400px;
+  margin: 30px auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.group-post-card img,
+.group-post-card video {
+  width: 100%;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.group-post-card .post-source {
+  font-size: 14px;
+  margin-bottom: 8px;
+  color: #555;
+}
+
+.group-post-card .post-content {
+  margin: 10px 0;
+  font-size: 14px;
+}
+
+.group-post-card .like-btn {
+  background: none;
+  border: none;
+  color: #e1306c;
+  font-weight: bold;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.group-post-card .comments {
+  font-size: 13px;
+  color: #222;
+  margin-bottom: 10px;
+}
+
+.group-post-card .comment-form {
+  display: flex;
+  gap: 10px;
+}
+
+.group-post-card .comment-form input {
+  flex: 1;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.group-post-card .comment-form button {
+  background-color: #3897f0;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}

@@ -1,19 +1,25 @@
+/* בסיס */
 body {
   background-color: #000;
   color: white;
-  font-family: Arial;
-  text-align: center;
-  padding: 40px;
+  font-family: Arial, sans-serif;
+  padding: 40px 0;
+  margin-left: 220px; /* התאמה ל-sidebar */
 }
 
-input, button {
+/* קלטים וכפתורים כלליים */
+input, button, select, textarea {
   padding: 10px;
-  margin: 10px;
+  margin: 10px 0;
   border-radius: 6px;
   font-size: 16px;
+  background-color: #222;
+  color: white;
+  border: 1px solid #333;
+  transition: 0.3s;
 }
 
-input {
+input, select, textarea {
   width: 250px;
 }
 
@@ -22,20 +28,156 @@ button {
   color: white;
   border: none;
   cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s;
 }
 
+button:hover {
+  background-color: #0b85c9;
+  transform: scale(1.03);
+}
+
+/* כפתור עליון */
+.create-btn {
+  background-color: #0af;
+  padding: 12px 20px;
+  font-size: 18px;
+  border-radius: 12px;
+  margin-bottom: 40px;
+}
+
+.create-btn:hover {
+  background-color: #0085ff;
+  transform: scale(1.05);
+}
+
+/* קבוצות - גריד */
 .group-list {
-  margin-top: 30px;
+  display: grid;
+    max-width: 1100px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 30px;
+  margin: 40px auto;
+  padding: 0 30px;
+  justify-items: center;
+}
+.group-title {
+  color: white;
+  font-size: 28px;
+  font-weight: 600;
+  margin: 40px auto 20px;
+  text-align: center;
 }
 
+/* כרטיס קבוצה */
 .group-item {
-  background: #111;
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 10px;
+  background: #1e1e1e;
+  border-radius: 18px;
+  padding: 24px 16px;
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+  box-shadow: 0 0 12px rgba(0,0,0,0.3);
+  transition: transform 0.2s ease;
+    
 }
 
-  
+.group-item:hover {
+  transform: translateY(-4px);
+}
+
+/* תמונת קבוצה */
+.group-image {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #444;
+  margin-bottom: 12px;
+}
+
+/* שם קבוצה */
+.group-name {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 8px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+
+.group-name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.group-name a:hover {
+  text-decoration: underline;
+  color: #00c3ff;
+}
+
+/* תגית קטגוריה */
+.group-category {
+  display: inline-block;
+  background-color: #333;
+  color: #bbb;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  font-weight: 500;
+}
+
+/* כפתורים בקבוצה */
+.group-buttons {
+   width: 100%;
+  justify-content: center;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  margin-bottom: 12px;
+}
+
+.group-buttons button {
+  background-color: #0af;
+  color: white;
+  padding: 8px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.group-buttons button:hover {
+  background-color: #0085ff;
+  transform: scale(1.03);
+}
+
+/* תיאור הקבוצה (מתגלה בלחיצה) */
+.group-description-box {
+  background-color: #2a2a2a;
+  color: #ddd;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  box-shadow: 0 0 6px rgba(0,0,0,0.3);
+  animation: fadeDesc 0.3s ease;
+}
+
+@keyframes fadeDesc {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.group-item button + .group-description-box {
+  display: none;
+}
+
 /*==================== SIDEBAR ====================*/
 .sidebar {
   position: fixed;
@@ -48,7 +190,7 @@ button {
   padding-top: 1rem;
   z-index: 1000;
   width: 220px;
-  height: auto;
+  height: 100%;
   box-sizing: border-box;
   display: flex;
 }
@@ -63,7 +205,6 @@ button {
   background-color: #262626;
 }
 
-.sidebar .logo,
 .sidebar h2 {
   font-family: 'Grand Hotel', cursive;
   font-size: 36px;
@@ -104,7 +245,125 @@ button {
   width: 110%;
   transition: background-color 0.3s ease;
 }
+
 .sidebar a:hover,
 .sidebar a:focus {
   background-color: #262626;
 }
+
+/*==================== MODAL ====================*/
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.8);
+}
+
+.modal-content {
+  background-color: #111;
+  margin: 8% auto;
+  padding: 30px;
+  border: 1px solid #333;
+  width: 400px;
+  border-radius: 12px;
+  text-align: center;
+  position: relative;
+  animation: slideIn 0.5s ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-content h2 {
+  margin-bottom: 20px;
+  color: #0af;
+}
+
+.modal-content input,
+.modal-content textarea,
+.modal-content select {
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.modal-content button {
+  width: 100%;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: red;
+}
+
+/* תצוגה מקדימה לתמונה */
+#image-preview {
+  margin: 15px auto;
+  display: block;
+  max-width: 100px;
+  border-radius: 50%;
+  border: 2px solid #0af;
+  object-fit: cover;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* קלט מסוג קובץ */
+.modal-content input[type="file"] {
+  background-color: transparent;
+  color: #ccc;
+  border: 1px dashed #444;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.modal-content input[type="file"]::file-selector-button {
+  background-color: #0af;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+.create-btn-container {
+  display: flex;
+  justify-content: flex-end; /* אפשר לשנות ל: center, flex-start */
+  padding: 0 40px;
+  margin-bottom: 20px;
+}
+.create-btn {
+  padding: 12px 22px;
+  font-size: 16px;
+  border-radius: 12px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.custom-pos {
+  position: absolute; /* או fixed אם אתה רוצה שהוא יישאר גם בגלילה */
+  top: 0px;
+  right: 200px;
+  z-index: 999;
+}
+

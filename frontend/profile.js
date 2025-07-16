@@ -1,12 +1,9 @@
 const backendURL = 'http://localhost:5000';
 
 function fixImageUrl(url) {
-  console.log("fixImageUrl input:", url); // DEBUG
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  const fullUrl = backendURL + url;
-  console.log("fixImageUrl output:", fullUrl); // DEBUG
-  return fullUrl;
+  return backendURL + url;
 }
 
 function getUserIdFromToken(token) {
@@ -18,12 +15,18 @@ function getUserIdFromToken(token) {
   }
 }
 
-const userId = getUserIdFromToken(localStorage.getItem('token'));
+const token = localStorage.getItem('token');
+const urlParams = new URLSearchParams(window.location.search);
+const userIdFromUrl = urlParams.get('userId');
+const loggedInUserId = getUserIdFromToken(token);
+const userId = userIdFromUrl || loggedInUserId;
+const isOwnProfile = userId === loggedInUserId;
+
+window.addEventListener('DOMContentLoaded', loadUserProfile);
 
 // ====== טעינת פרופיל ======
 async function loadUserProfile() {
   try {
-    const token = localStorage.getItem('token');
     if (!token || !userId) {
       alert('Please login first');
       window.location.href = 'login.html';
@@ -40,12 +43,35 @@ async function loadUserProfile() {
     }
 
     const user = await res.json();
+    // שליטה בתצוגת כפתורים לפי אם זה פרופיל שלי או של אחר
+    const ownControls = document.getElementById('ownProfileControls');
+    const otherControls = document.getElementById('otherProfileControls');
+
+if (isOwnProfile) {
+  if (ownControls) ownControls.style.display = 'flex';
+  if (otherControls) otherControls.style.display = 'none';
+} else {
+  if (ownControls) ownControls.style.display = 'none';
+  if (otherControls) otherControls.style.display = 'flex';
+}
+
+
     document.getElementById('profileImage').src = user.avatar ? fixImageUrl(user.avatar) : 'default-avatar.png';
     document.getElementById('username').textContent = user.username;
     document.getElementById('bio').textContent = user.bio || '';
     document.getElementById('postsCount').textContent = `${user.postsCount || 0} posts`;
     document.getElementById('followersCount').textContent = `${user.followers.length} followers`;
     document.getElementById('followingCount').textContent = `${user.following.length} following`;
+
+    if (isOwnProfile) {
+      setupProfileImageControls();
+      document.getElementById('editProfileBtn')?.classList.remove('hidden');
+      document.getElementById('uploadPostSidebarBtn')?.classList.remove('hidden');
+    } else {
+      document.getElementById('editProfileBtn')?.classList.add('hidden');
+      document.getElementById('uploadPostSidebarBtn')?.classList.add('hidden');
+      document.getElementById('photoControls')?.remove();
+    }
 
     setupFollowButton(user);
     await loadUserPosts();
@@ -59,17 +85,20 @@ function setupFollowButton(user) {
   const followBtn = document.getElementById('followBtn');
   if (!followBtn) return;
 
-  const currentUserId = getUserIdFromToken(localStorage.getItem('token'));
-  if (!currentUserId) return;
+  if (isOwnProfile) {
+    followBtn.style.display = 'none';
+    return;
+  }
 
-  const isFollowing = user.followers.some(f => f._id === currentUserId);
+  followBtn.style.display = 'inline-block';
+  const isFollowing = user.followers.some(f => f._id === loggedInUserId);
   followBtn.textContent = isFollowing ? 'Unfollow' : 'Follow';
 
   followBtn.onclick = async () => {
     try {
       const res = await fetch(`${backendURL}/api/users/${user._id}/follow`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!res.ok) {
         alert('Failed to update follow status');
@@ -83,78 +112,79 @@ function setupFollowButton(user) {
   };
 }
 
-// ====== תמונת פרופיל ======
-const profileModal = document.getElementById('profileModal');
-const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
-const removePhotoBtn = document.getElementById('removePhotoBtn');
-const cancelBtn = document.getElementById('cancelBtn');
-const imageUpload = document.getElementById('imageUpload');
-const profileImage = document.getElementById('profileImage');
+function setupProfileImageControls() {
+  const profileModal = document.getElementById('profileModal');
+  const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
+  const removePhotoBtn = document.getElementById('removePhotoBtn');
+  const cancelBtn = document.getElementById('cancelBtn');
+  const imageUpload = document.getElementById('imageUpload');
+  const profileImage = document.getElementById('profileImage');
 
-profileImage.addEventListener('click', e => {
-  e.stopPropagation();
-  profileModal.classList.remove('hidden');
-});
-uploadPhotoBtn.addEventListener('click', () => {
-  imageUpload.click();
-  profileModal.classList.add('hidden');
-});
-removePhotoBtn.addEventListener('click', async () => {
-  try {
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${backendURL}/api/users/${userId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ avatar: null })
-    });
-    if (!res.ok) throw new Error('Failed to remove avatar');
+  profileImage.addEventListener('click', e => {
+    e.stopPropagation();
+    profileModal.classList.remove('hidden');
+  });
 
-    profileImage.src = 'default-avatar.png';
-    imageUpload.value = null;
+  uploadPhotoBtn.addEventListener('click', () => {
+    imageUpload.click();
     profileModal.classList.add('hidden');
-    loadUserProfile();
-  } catch (error) {
-    alert('Error removing profile image');
-    console.error(error);
-  }
-});
-cancelBtn.addEventListener('click', () => profileModal.classList.add('hidden'));
-profileModal.addEventListener('click', e => {
-  if (e.target === profileModal) profileModal.classList.add('hidden');
-});
+  });
 
-imageUpload.addEventListener('change', async e => {
-  const file = e.target.files[0];
-  if (!file) return;
+  removePhotoBtn.addEventListener('click', async () => {
+    try {
+      const res = await fetch(`${backendURL}/api/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ avatar: null })
+      });
+      if (!res.ok) throw new Error('Failed to remove avatar');
 
-  const formData = new FormData();
-  formData.append('avatar', file);
-
-  try {
-    const token = localStorage.getItem('token');
-    const res = await fetch(`${backendURL}/api/users/${userId}`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData
-    });
-
-    if (!res.ok) {
-      alert('Failed to update profile image');
-      return;
+      profileImage.src = 'default-avatar.png';
+      imageUpload.value = null;
+      profileModal.classList.add('hidden');
+      loadUserProfile();
+    } catch (error) {
+      alert('Error removing profile image');
+      console.error(error);
     }
+  });
 
-    const user = await res.json();
-    profileImage.src = user.avatar ? fixImageUrl(user.avatar) : 'default-avatar.png';
-    profileModal.classList.add('hidden');
-  } catch (error) {
-    alert('Error updating profile image');
-    console.error(error);
-  }
-});
+  cancelBtn.addEventListener('click', () => profileModal.classList.add('hidden'));
+  profileModal.addEventListener('click', e => {
+    if (e.target === profileModal) profileModal.classList.add('hidden');
+  });
 
+  imageUpload.addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const res = await fetch(`${backendURL}/api/users/${userId}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+
+      if (!res.ok) {
+        alert('Failed to update profile image');
+        return;
+      }
+
+      const user = await res.json();
+      profileImage.src = user.avatar ? fixImageUrl(user.avatar) : 'default-avatar.png';
+      profileModal.classList.add('hidden');
+    } catch (error) {
+      alert('Error updating profile image');
+      console.error(error);
+    }
+  });
+} // המשך הפוסטים והמודלים נשאר ללא שינוי
 // ====== פוסטים (כולל וידאו) ======
 const postsGrid = document.getElementById('postsGrid');
 const uploadPostSidebarBtn = document.getElementById('uploadPostSidebarBtn');
@@ -288,7 +318,7 @@ async function openPostModal(post) {
   likeBtn.onclick = async () => {
     try {
       const res = await fetch(`${backendURL}/api/posts/${post._id}/like`, {
-        method: 'POST',
+        method: 'PATCH',
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (!res.ok) throw new Error('Failed to like');
