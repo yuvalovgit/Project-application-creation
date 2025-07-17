@@ -1,12 +1,14 @@
 const postsGrid = document.getElementById('postsGrid');
 const backendURL = 'http://localhost:5000';
 
+// ===== Helper to fix media URL =====
 function fixImageUrl(url) {
   if (!url) return '';
   if (url.startsWith('http')) return url;
   return backendURL + url;
 }
 
+// ===== Load Feed =====
 window.addEventListener('DOMContentLoaded', loadFeed);
 
 async function loadFeed() {
@@ -76,6 +78,7 @@ async function loadFeed() {
       postsGrid.appendChild(postDiv);
     });
 
+    // ===== Like Button Listener =====
     document.querySelectorAll('.like-btn').forEach(button => {
       button.addEventListener('click', async () => {
         const postId = button.getAttribute('data-postid');
@@ -88,6 +91,7 @@ async function loadFeed() {
       });
     });
 
+    // ===== Comment Submit =====
     document.querySelectorAll('.comment-form').forEach(form => {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -113,5 +117,71 @@ async function loadFeed() {
   } catch (err) {
     console.error('Error loading feed:', err);
     alert('Error loading feed');
+  }
+}
+
+// ====== Search Modal Functions ======
+
+function openUserSearchModal() {
+  document.getElementById('modalOverlay').style.display = 'block';
+  document.getElementById('userSearchModal').style.display = 'block';
+}
+
+function closeUserSearchModal() {
+  document.getElementById('modalOverlay').style.display = 'none';
+  document.getElementById('userSearchModal').style.display = 'none';
+  document.getElementById('searchResults').innerHTML = '';
+}
+
+async function searchUsers() {
+  const username = document.getElementById('search-username').value.trim();
+  const token = localStorage.getItem('token');
+  const container = document.getElementById('searchResults');
+  container.innerHTML = '';
+
+  try {
+    // === חיפוש משתמשים ===
+    const userRes = await fetch(`${backendURL}/api/users/search?username=${username}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const users = await userRes.json();
+
+    container.innerHTML += `<h3>👤 Users</h3>`;
+    if (users.length) {
+      container.innerHTML += users.map(user => `
+        <div style="border-bottom: 1px solid #555; padding: 6px 0;">
+          <a href="profile.html?userId=${user._id}" style="color:#0af; text-decoration:underline;">
+            <strong>${user.username}</strong>
+          </a><br/>
+          Registered: ${new Date(user.createdAt).toLocaleDateString()}
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML += '<p>No users found.</p>';
+    }
+
+    // === חיפוש קבוצות ===
+    const groupRes = await fetch(`${backendURL}/api/groups/search?name=${username}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const groups = await groupRes.json();
+
+    container.innerHTML += `<h3 style="margin-top:1em;">👥 Groups</h3>`;
+    if (groups.length) {
+      container.innerHTML += groups.map(group => `
+        <div style="border-bottom: 1px solid #555; padding: 6px 0;">
+          <a href="create-post.html?groupId=${group._id}" style="color:#fa0; text-decoration:underline;">
+            <strong>${group.name}</strong>
+          </a><br/>
+          Members: ${group.members?.length || 0}
+        </div>
+      `).join('');
+    } else {
+      container.innerHTML += '<p>No groups found.</p>';
+    }
+
+  } catch (err) {
+    console.error('Search failed:', err);
+    container.innerHTML = '<p style="color:red;">Error occurred while searching.</p>';
   }
 }
