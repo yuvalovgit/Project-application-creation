@@ -4,13 +4,13 @@ const authMiddleware = require('../middleware/authMiddleware');
 const upload = require('../middleware/multerConfig');
 const User = require('../models/user');
 
-// NEW: Search Users route (partial match by username, filter by group/date)
+// 🔍 חיפוש משתמשים לפי פרמטרים
 router.get('/search', authMiddleware, async (req, res) => {
   const { username, group, date } = req.query;
   const query = {};
 
   if (username) {
-    query.username = { $regex: username, $options: 'i' }; // Partial, case-insensitive match
+    query.username = { $regex: username, $options: 'i' }; // חיפוש חלקי בלי תלות באותיות קטנות/גדולות
   }
 
   if (group) {
@@ -31,8 +31,23 @@ router.get('/search', authMiddleware, async (req, res) => {
   }
 });
 
-// EXISTING ROUTES
+// 🆕 העלאת תמונת פרופיל (avatar)
+router.post('/:userId/avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
+    user.avatar = `/uploads/avatars/${req.file.filename}`;
+    await user.save();
+
+    res.json({ avatar: user.avatar });
+  } catch (err) {
+    console.error('Avatar upload error:', err);
+    res.status(500).json({ error: 'Failed to update avatar' });
+  }
+});
+
+// 🌐 ראוטים קיימים
 const {
   getUserProfile,
   updateUserProfile,
@@ -41,7 +56,7 @@ const {
   getAllUsers
 } = require('../controllers/userController');
 
-router.get('/', authMiddleware, getAllUsers); // Route to get all users
+router.get('/', authMiddleware, getAllUsers);
 router.get('/:userId', authMiddleware, getUserProfile);
 router.put('/:userId', authMiddleware, upload.single('avatar'), updateUserProfile);
 router.post('/:userId/follow', authMiddleware, followUser);

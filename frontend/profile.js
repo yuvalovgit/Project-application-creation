@@ -158,32 +158,34 @@ function setupProfileImageControls() {
   });
 
   imageUpload.addEventListener('change', async e => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const file = e.target.files[0];
+  if (!file) return;
 
-    const formData = new FormData();
-    formData.append('avatar', file);
+  const formData = new FormData();
+  formData.append('avatar', file);
 
-    try {
-      const res = await fetch(`${backendURL}/api/users/${userId}`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData
-      });
+  try {
+    const res = await fetch(`${backendURL}/api/users/${userId}/avatar`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }, // לא להוסיף Content-Type!
+      body: formData
+    });
 
-      if (!res.ok) {
-        alert('Failed to update profile image');
-        return;
-      }
-
-      const user = await res.json();
-      profileImage.src = user.avatar ? fixImageUrl(user.avatar) : 'default-avatar.png';
-      profileModal.classList.add('hidden');
-    } catch (error) {
-      alert('Error updating profile image');
-      console.error(error);
+    if (!res.ok) {
+      alert('Failed to update profile image');
+      return;
     }
-  });
+
+    const data = await res.json();
+    profileImage.src = fixImageUrl(data.avatar);  // עדכון תמונה
+    profileModal.classList.add('hidden');
+    loadUserProfile(); // טען שוב את כל הפרופיל
+  } catch (error) {
+    alert('Error updating profile image');
+    console.error(error);
+  }
+});
+
 } // המשך הפוסטים והמודלים נשאר ללא שינוי
 // ====== פוסטים (כולל וידאו) ======
 const postsGrid = document.getElementById('postsGrid');

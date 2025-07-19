@@ -13,6 +13,7 @@ const storage = multer.diskStorage({
     let subfolder = 'posts';
     if (file.fieldname === 'groupImage') subfolder = 'profiles';
     else if (file.fieldname === 'groupCover') subfolder = 'covers';
+    else if (file.fieldname === 'avatar') subfolder = 'avatars'; // ✅ חדש
 
     const dest = path.join(uploadDir, subfolder);
     fs.mkdirSync(dest, { recursive: true });
