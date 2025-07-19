@@ -105,3 +105,13 @@ exports.getUserPosts = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
+exports.getUsersWithLocation = async (req, res) => {
+  try {
+    const users = await User.find({ location: { $exists: true, $ne: "" } })
+      .select('username location');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

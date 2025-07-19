@@ -1,9 +1,13 @@
+
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
 const User = require('../models/user');
 const Post = require('../models/post');
+
+// Get users with location (for map)
+router.get('/stats/users-with-location', authMiddleware, adminMiddleware, require('../controllers/userController').getUsersWithLocation);
 
 // routes for monitorin as admin
 
@@ -50,7 +54,14 @@ router.get('/stats/posts-per-day', authMiddleware, adminMiddleware, async (req, 
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
-});// get posts per day
+})
+
+
+
+
+
+
+
 
 
 module.exports = router;

@@ -6,13 +6,43 @@ function showLogin() {
   document.getElementById('not-admin').style.display = 'none';
 }
 
-function showDashboard() {
+
+// Mapping of country names to coordinates (add more as needed)
+const countryCoords = {
+  "china": { lat: 35.8617, lng: 104.1954 },
+  "india": { lat: 20.5937, lng: 78.9629 },
+  "usa": { lat: 37.0902, lng: -95.7129 },
+  "indonesia": { lat: -0.7893, lng: 113.9213 },
+  "pakistan": { lat: 30.3753, lng: 69.3451 },
+  "nigeria": { lat: 9.0820, lng: 8.6753 },
+  "brazil": { lat: -14.2350, lng: -51.9253 },
+  "bangladesh": { lat: 23.6850, lng: 90.3563 },
+  "russia": { lat: 61.5240, lng: 105.3188 },
+  "mexico": { lat: 23.6345, lng: -102.5528 },
+  "israel": { lat: 31.0461, lng: 34.8516 },
+  "france": { lat: 46.6034, lng: 1.8883 },
+  "germany": { lat: 51.1657, lng: 10.4515 },
+  "uk": { lat: 55.3781, lng: -3.4360 },
+  // Add more countries as needed
+};
+
+
+
+async function showDashboard() {
   document.getElementById('login-form').style.display = 'none';
   document.getElementById('admin-content').style.display = '';
   document.getElementById('not-admin').style.display = 'none';
   // Set admin name in navbar
   const adminName = localStorage.getItem('adminUsername') || 'Admin';
   document.querySelector('.navbar-user').textContent = `👤 ${adminName}`;
+
+  // Fetch users and show them on the map
+  try {
+    const users = await fetchWithAuth('http://localhost:5000/api/admin/stats/users-with-location');
+    showUserMap(users);
+  } catch (err) {
+    showUserMap([]); // fallback to empty map
+  }
 }
 
 function showNotAdmin() {
@@ -41,6 +71,32 @@ async function login() {
     document.getElementById('login-error').textContent = 'Invalid username or password';
   }
 }
+async function showUserMap(users) {
+  // Remove previous map if exists
+  if (window.userMapInstance) {
+    window.userMapInstance.remove();
+  }
+  // World view
+  const map = L.map('userMap').setView([32, 34], 2);
+  window.userMapInstance = map;
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+  users.forEach(user => {
+    const locKey = user.location ? user.location.toLowerCase() : null;
+    if (locKey && countryCoords[locKey]) {
+      const coords = countryCoords[locKey];
+      L.circleMarker([coords.lat, coords.lng], {
+        radius: 14, 
+        color: '#b00', 
+        fillColor: '#ffcc00', 
+        fillOpacity: 0.9,
+        weight: 3
+      })
+        .addTo(map)
+        .bindPopup(`${user.username}<br>${user.location}`);
+    }
+  });
+}
 
 async function fetchWithAuth(url) {
   const res = await fetch(url, {
@@ -65,6 +121,8 @@ async function loadDashboard() {
     const userLabels = postsPerUser.map(u => u.username);
     const userCounts = postsPerUser.map(u => u.postCount);
 
+
+    // posts charts
     new Chart(document.getElementById('postsPerUserChart'), {
       type: 'bar',
       data: {
@@ -99,6 +157,11 @@ async function loadDashboard() {
     });
 
     showDashboard();
+
+    // Fetch users with location and show map
+    const usersWithLocation = await fetchWithAuth('http://localhost:5000/api/admin/stats/users-with-location');
+    showUserMap(usersWithLocation);
+
   } catch (err) {
     if (err.message === 'Not admin') {
       showNotAdmin();
@@ -108,4 +171,4 @@ async function loadDashboard() {
   }
 }
 
-window.onload = loadDashboard;
+window.onload = loadDashboard();

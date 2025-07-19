@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 </head>
 <body>
   <nav class="navbar">
@@ -37,11 +38,16 @@
           <canvas id="postsPerDayChart"></canvas>
         </div>
       </div>
+      <div class="map-card">
+        <div class="chart-title">User Locations Map with Google Maps</div>
+        <div id="userMap" style="height: 400px; width: 100%; margin-top: 16px;"></div>
+      </div>
     </div>
     <div id="not-admin" class="not-admin">
       <h2>Access Denied: Admins Only</h2>
     </div>
   </div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="admin.js"></script>
 </body>
 </html>
