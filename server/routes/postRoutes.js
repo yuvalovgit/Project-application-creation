@@ -20,4 +20,5 @@ router.patch('/:postId/like', authMiddleware, likePost);
 router.post('/:postId/comments', authMiddleware, addComment);
 router.delete('/:postId', authMiddleware, deletePost);
 
+
 module.exports = router;

@@ -115,3 +115,22 @@ exports.getUsersWithLocation = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+// 🗑️ מחיקת חשבון עצמי
+exports.deleteMyAccount = async (req, res) => {
+  try {
+    const userId = req.user.id; // מגיע מה־authMiddleware
+
+    // מחיקה של הפוסטים של המשתמש
+    await Post.deleteMany({ author: userId });
+
+    // מחיקה של המשתמש עצמו
+    const deletedUser = await User.findByIdAndDelete(userId);
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({ message: 'Your account has been deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};

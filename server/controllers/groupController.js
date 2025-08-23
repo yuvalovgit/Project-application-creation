@@ -15,7 +15,7 @@ exports.createGroup = async (req, res) => {
       description,
       topic,
       image: req.file ? `/uploads/${req.file.filename}` : '',
-      cover: '',             // נוסיף כאן אם תרצה cover על־ידי createGroup
+      cover: '',             // אפשר להרחיב ל-cover בזמן יצירה אם תרצה
       members: [req.user.id],
       admin: req.user.id,
       isPrivate,
@@ -30,19 +30,21 @@ exports.createGroup = async (req, res) => {
   }
 };
 
-// הצטרפות לקבוצה
+// הצטרפות לקבוצה (תיקון includes למבנה עם ObjectId)
 exports.joinGroup = async (req, res) => {
   try {
     const { groupId } = req.body;
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ error: 'Group not found' });
 
-    if (group.members.includes(req.user.id)) {
+    const alreadyMember = group.members.some(m => m.toString() === req.user.id);
+    if (alreadyMember) {
       return res.status(400).json({ error: 'Already a member' });
     }
 
     if (group.isPrivate) {
-      if (group.pendingRequests.includes(req.user.id)) {
+      const alreadyRequested = group.pendingRequests.some(id => id.toString() === req.user.id);
+      if (alreadyRequested) {
         return res.status(400).json({ error: 'Already requested to join' });
       }
       group.pendingRequests.push(req.user.id);
@@ -63,12 +65,16 @@ exports.joinGroup = async (req, res) => {
   }
 };
 
-// עזיבת קבוצה
+// עזיבת קבוצה (מניעת עזיבת אדמין)
 exports.leaveGroup = async (req, res) => {
   try {
     const { groupId } = req.body;
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ error: 'Group not found' });
+
+    if (group.admin.toString() === req.user.id) {
+      return res.status(400).json({ error: 'Admin cannot leave the group. Transfer ownership or delete the group.' });
+    }
 
     group.members = group.members.filter(m => m.toString() !== req.user.id);
     await group.save();
@@ -110,27 +116,24 @@ exports.getMyGroups = async (req, res) => {
   }
 };
 
-
 // שליפת קבוצה לפי מזהה (עם populate של members ו־admin)
 exports.getGroupById = async (req, res) => {
   try {
     const group = await Group.findById(req.params.id)
       .populate('members', 'username avatar')
-      .populate('admin',   'username avatar')  // <— הוספנו פה
+      .populate('admin',   'username avatar')
       .lean();
 
     if (!group) {
       return res.status(404).json({ error: 'Group not found' });
     }
 
-    // אין יותר צורך להמיר את admin ל־string, כי עכשיו זו אובייקט עם _id ו־username
     res.json(group);
   } catch (err) {
     console.error("Get group by ID error:", err);
     res.status(500).json({ error: err.message });
   }
 };
-
 
 // חיפוש קבוצות לפי שם
 exports.searchGroups = async (req, res) => {
@@ -147,22 +150,32 @@ exports.searchGroups = async (req, res) => {
   }
 };
 
-// אישור בקשת הצטרפות ע"י האדמין
+// אישור בקשת הצטרפות ע"י האדמין (בדיקות כפילות והשוואות תקינות)
 exports.approveJoinRequest = async (req, res) => {
   try {
     const groupId = req.params.id;
     const { userId } = req.body;
+
     const group = await Group.findById(groupId);
     if (!group) return res.status(404).json({ error: 'Group not found' });
     if (group.admin.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Only the admin can approve requests' });
     }
-    if (!group.pendingRequests.includes(userId)) {
+
+    const requested = group.pendingRequests.some(id => id.toString() === userId);
+    if (!requested) {
       return res.status(400).json({ error: 'User has not requested to join' });
     }
+
+    const alreadyMember = group.members.some(m => m.toString() === userId);
+    if (alreadyMember) {
+      return res.status(400).json({ error: 'User is already a member' });
+    }
+
     group.pendingRequests = group.pendingRequests.filter(id => id.toString() !== userId);
     group.members.push(userId);
     await group.save();
+
     res.json({ message: 'User approved and added to group', group });
   } catch (err) {
     console.error("Approve join request error:", err);
@@ -170,7 +183,7 @@ exports.approveJoinRequest = async (req, res) => {
   }
 };
 
-// עדכון פרטי קבוצה ע"י האדמין בלבד
+// עדכון פרטי קבוצה ע"י האדמין בלבד (עם whitelist)
 exports.updateGroup = async (req, res) => {
   try {
     const groupId = req.params.id;
@@ -179,11 +192,20 @@ exports.updateGroup = async (req, res) => {
     if (group.admin.toString() !== req.user.id) {
       return res.status(403).json({ error: 'Only the admin can update the group' });
     }
+
+    // שדות שמותר לעדכן
+    const allowed = ['name', 'description', 'topic', 'isPrivate'];
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) group[key] = req.body[key];
+    }
+
     // תמונה חדשה?
     if (req.file) {
+      // הערה: אם ה־multer שלך שומר קבוצות בתיקיית 'profiles' עבור fieldname='groupImage'
+      // אז מומלץ לוודא שגם ה-route משתמש בשם השדה הזה, אחרת זה ילך ל'posts' כברירת מחדל.
       group.image = `/uploads/${req.file.filename}`;
     }
-    Object.assign(group, req.body);
+
     await group.save();
     res.json({ message: 'Group updated successfully', group });
   } catch (err) {
@@ -236,7 +258,7 @@ exports.getGroupPosts = async (req, res) => {
 exports.uploadProfileImage = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file received' });
-   const url = `/uploads/profiles/${req.file.filename}`;       // ← נוסיף כאן את התיקיה
+    const url = `/uploads/profiles/${req.file.filename}`;
     const group = await Group.findByIdAndUpdate(req.params.id, { image: url }, { new: true });
     if (!group) return res.status(404).json({ error: 'Group not found' });
     res.json({ url });
@@ -263,7 +285,7 @@ exports.removeProfileImage = async (req, res) => {
 exports.uploadCoverImage = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file received' });
-     const url = `/uploads/covers/${req.file.filename}`;        // ← וגם כאן
+    const url = `/uploads/covers/${req.file.filename}`;
     const group = await Group.findByIdAndUpdate(req.params.id, { cover: url }, { new: true });
     if (!group) return res.status(404).json({ error: 'Group not found' });
     res.json({ url });
@@ -285,6 +307,37 @@ exports.removeCoverImage = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+// עדכון תוכן פוסט (רק היוצר, אפשר להרחיב גם לאדמין קבוצה)
+const updatePost = async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { content } = req.body;
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    // רק היוצר יכול לערוך (אם תרצה שגם אדמין קבוצה – ראה הערה למטה)
+    if (post.author.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    if (typeof content !== 'undefined') {
+      post.content = content;
+    }
+
+    await post.save();
+
+    const updated = await Post.findById(postId)
+      .populate('author', 'username avatar')
+      .populate({ path: 'comments.author', select: 'username avatar' });
+
+    res.json(updated);
+  } catch (err) {
+    console.error('Error updating post:', err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // הסרת חבר מהקבוצה (admin only)
 exports.removeMember = async (req, res) => {
   try {
@@ -308,6 +361,31 @@ exports.removeMember = async (req, res) => {
     res.json({ message: 'Member removed', group });
   } catch (err) {
     console.error("Remove member error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// מחיקת קבוצה (admin only) + מחיקת פוסטים של הקבוצה
+exports.deleteGroup = async (req, res) => {
+  try {
+    const groupId = req.params.id;
+    const group   = await Group.findById(groupId);
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+
+    // רק האדמין יכול למחוק
+    if (group.admin.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Only the admin can delete this group' });
+    }
+
+    // מחיקת כל הפוסטים של הקבוצה
+    await Post.deleteMany({ group: groupId });
+
+    // מחיקת הקבוצה
+    await group.deleteOne();
+
+    res.json({ message: 'Group deleted successfully' });
+  } catch (err) {
+    console.error("Delete group error:", err);
     res.status(500).json({ error: err.message });
   }
 };

@@ -53,7 +53,8 @@ const {
   updateUserProfile,
   followUser,
   getUserPosts,
-  getAllUsers
+  getAllUsers,
+  deleteMyAccount   // 👈 הוספנו פה
 } = require('../controllers/userController');
 
 router.get('/', authMiddleware, getAllUsers);
@@ -61,5 +62,8 @@ router.get('/:userId', authMiddleware, getUserProfile);
 router.put('/:userId', authMiddleware, upload.single('avatar'), updateUserProfile);
 router.post('/:userId/follow', authMiddleware, followUser);
 router.get('/:userId/posts', authMiddleware, getUserPosts);
+
+// 🗑️ מחיקת החשבון העצמי
+router.delete('/me', authMiddleware, deleteMyAccount);
 
 module.exports = router;
