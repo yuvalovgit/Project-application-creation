@@ -1,16 +1,18 @@
 const backendURL = 'http://localhost:5000';
-const token    = localStorage.getItem('token');
-const userId   = localStorage.getItem('userId');
-const urlParams = new URLSearchParams(window.location.search);
-const groupId  = urlParams.get('groupId');
 
-if (!token || !userId || !groupId) {
+const token     = localStorage.getItem('token');
+const userId    = localStorage.getItem('userId');
+const urlParams = new URLSearchParams(window.location.search);
+const groupId   = urlParams.get('groupId');
+
+// ---- Auth guard (groupId is OPTIONAL) ----
+if (!token || !userId) {
   alert('Please log in again');
-  localStorage.clear(); // מנקה טוקן שגוי
+  localStorage.clear();
   window.location.href = 'login.html';
 }
 
-
+// ---- URL/media helpers ----
 function fixImageUrl(url) {
   if (!url) return '';
   if (url.startsWith('http')) return url;
@@ -18,14 +20,42 @@ function fixImageUrl(url) {
   return backendURL + url;
 }
 
-
 const DEFAULT_AVATAR = fixImageUrl('/uploads/default-avatar.png');
-const DEFAULT_COVER = fixImageUrl('/uploads/default-cover.jpg');
+const DEFAULT_COVER  = fixImageUrl('/uploads/default-cover.jpg');
 
+// ---- Elements we might hide in create-only mode ----
+const groupContainer   = document.querySelector('.group-container');
+const sectionTitle     = document.querySelector('.section-title'); // "Group Feed"
+const groupPostsFeed   = document.getElementById('groupPostsFeed');
+
+// ---- Page bootstrap ----
+window.addEventListener('DOMContentLoaded', () => {
+  if (groupId) {
+    // Full group profile + feed
+    loadGroupProfile();
+  } else {
+    // Create-only mode (no group context)
+    enterCreateOnlyMode();
+  }
+});
+
+// =====================================================
+// ===============  CREATE-ONLY MODE  ==================
+// =====================================================
+function enterCreateOnlyMode() {
+  // Hide group UI
+  if (groupContainer) groupContainer.style.display = 'none';
+  if (groupPostsFeed) groupPostsFeed.style.display = 'none';
+  if (sectionTitle) sectionTitle.textContent = 'Create a New Post';
+
+  // Nothing else to load; posting will skip the "group" field.
+}
+
+// =====================================================
+// ===============  GROUP PROFILE MODE  ================
+// =====================================================
 let currentGroup = null;
 let isAdmin = false;
-
-window.addEventListener('DOMContentLoaded', loadGroupProfile);
 
 async function loadGroupProfile() {
   try {
@@ -34,33 +64,35 @@ async function loadGroupProfile() {
     });
     if (!res.ok) throw new Error('Failed to load group');
     const group = await res.json();
-    console.log("🔐 Logged userId:", userId);
-    console.log("👑 Group adminId:", typeof group.admin === 'object' ? group.admin._id : group.admin);
-    console.log("👥 Members:", group.members);
-
     currentGroup = group;
 
-    const adminField = group.admin;
-    const adminId = adminField
-      ? (typeof adminField === 'object' ? adminField._id.toString() : adminField)
+    // Normalize adminId
+    const adminId = group.admin
+      ? (typeof group.admin === 'object' ? String(group.admin._id) : String(group.admin))
       : null;
-    isAdmin = adminId?.toString() === userId?.toString();
-    const isMember = group.members.includes(userId);
 
-    document.getElementById('groupImage').src = group.image ? fixImageUrl(group.image) : DEFAULT_AVATAR;
-    document.getElementById('groupCoverImage').src = group.cover ? fixImageUrl(group.cover) : DEFAULT_COVER;
-    document.getElementById('groupName').textContent = group.name;
+    isAdmin = adminId && String(adminId) === String(userId);
+
+    // Normalize membership (members may be strings or objects)
+    const isMember = (group.members || []).some(m =>
+      (typeof m === 'string' ? m : m?._id) && String(typeof m === 'string' ? m : m._id) === String(userId)
+    );
+
+    // Fill header
+    document.getElementById('groupImage').src       = group.image ? fixImageUrl(group.image) : DEFAULT_AVATAR;
+    document.getElementById('groupCoverImage').src  = group.cover ? fixImageUrl(group.cover) : DEFAULT_COVER;
+    document.getElementById('groupName').textContent        = group.name || '';
     document.getElementById('groupDescription').textContent = group.description || '';
-    document.getElementById('groupCategory').textContent = '#' + (group.topic || 'general');
-    document.getElementById('groupMembersCount').textContent = group.members.length;
-    document.getElementById('groupPostsCount').textContent = group.posts?.length || '0';
+    document.getElementById('groupCategory').textContent    = '#' + (group.topic || 'general');
+    document.getElementById('groupMembersCount').textContent = (group.members || []).length;
+    document.getElementById('groupPostsCount').textContent   = (group.posts || []).length || 0;
 
     const adminInfo = document.getElementById('adminInfo');
     if (isAdmin) {
       adminInfo.textContent = 'You are the admin of this group';
       adminInfo.style.color = '#1c8a00';
-    } else if (typeof adminField === 'object') {
-      adminInfo.textContent = `Admin: ${adminField.username}`;
+    } else if (typeof group.admin === 'object' && group.admin?.username) {
+      adminInfo.textContent = `Admin: ${group.admin.username}`;
     } else {
       adminInfo.textContent = 'Admin: N/A';
     }
@@ -73,34 +105,11 @@ async function loadGroupProfile() {
     if (isAdmin) {
       editBtn.style.display = 'inline-block';
       editBtn.onclick = openEditModal;
+
+      // Enable image modal controls for admin
+      enableImageModalControls();
     } else {
       editBtn.style.display = 'none';
-    }
-
-    // Admin only: allow changing images
-    if (isAdmin) {
-      document.getElementById('groupImage').addEventListener('click', () => {
-        currentImageType = 'profile';
-        modalTitle.innerText = 'Change Profile Photo';
-        modalOverlay.classList.remove('hidden');
-      });
-
-      document.getElementById('groupCoverImage').addEventListener('click', () => {
-        currentImageType = 'cover';
-        modalTitle.innerText = 'Change Cover Photo';
-        modalOverlay.classList.remove('hidden');
-      });
-
-      uploadPhotoBtn.addEventListener('click', () => {
-        modalOverlay.classList.add('hidden');
-        if (currentImageType === 'profile') profileFileInput.click();
-        else coverFileInput.click();
-      });
-
-      removePhotoBtn.addEventListener('click', () => {
-        modalOverlay.classList.add('hidden');
-        removeImage(currentImageType);
-      });
     }
 
     await loadGroupPosts();
@@ -122,12 +131,12 @@ async function loadGroupPosts() {
     const postsGrid = document.getElementById('groupPostsFeed');
     postsGrid.innerHTML = '';
 
-    posts.reverse().forEach(post => {
+    posts.slice().reverse().forEach(post => {
       const postEl = document.createElement('div');
       postEl.className = 'group-post';
 
-      const postId = typeof post._id === 'object' ? post._id.toString() : post._id;
-      const isLiked = post.likes?.includes(userId);
+      const postId = typeof post._id === 'object' ? String(post._id) : String(post._id);
+      const isLiked = (post.likes || []).some(id => String(id) === String(userId));
       const likeIconClass = isLiked ? 'fas' : 'far';
 
       const lastComments = (post.comments || []).slice(-2).map(c => `
@@ -156,7 +165,7 @@ async function loadGroupPosts() {
         </div>
 
         <div class="post-likes">
-          ${post.likes?.length || 0} likes
+          ${(post.likes || []).length} likes
         </div>
 
         <div class="post-caption">
@@ -168,12 +177,10 @@ async function loadGroupPosts() {
           ${(post.comments?.length || 0) > 2 ? `<a href="#">View all ${post.comments.length} comments</a>` : ''}
         </div>
 
-        <div class="post-add-comment">
-          <input type="text" placeholder="Add a comment..."
-            onkeypress="if(event.key === 'Enter') submitComment('${postId}', this)" />
-        </div>
-
-        ${isAdmin || post.author?._id === userId ? `<button class="delete-btn" onclick="deleteGroupPost('${postId}')">Delete</button>` : ''}
+        ${(isAdmin || String(post.author?._id) === String(userId))
+          ? `<button class="delete-btn" onclick="deleteGroupPost('${postId}')">Delete</button>`
+          : ''
+        }
       `;
 
       postsGrid.appendChild(postEl);
@@ -183,9 +190,6 @@ async function loadGroupPosts() {
     alert('Error loading posts');
   }
 }
-
-
-
 
 async function deleteGroupPost(postId) {
   if (!confirm('Are you sure you want to delete this post?')) return;
@@ -210,10 +214,7 @@ async function joinGroup(groupId) {
   try {
     const res = await fetch(`${backendURL}/api/groups/join`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ groupId })
     });
     if (!res.ok) {
@@ -232,10 +233,7 @@ async function leaveGroup(groupId) {
   try {
     const res = await fetch(`${backendURL}/api/groups/leave`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ groupId })
     });
     if (!res.ok) {
@@ -250,44 +248,58 @@ async function leaveGroup(groupId) {
   }
 }
 
-async function loadAndOpenPost(postId) {
-  try {
-    const res = await fetch(`${backendURL}/api/posts/${postId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (!res.ok) throw new Error('Failed to fetch post');
-    const post = await res.json();
-    alert("Post details:\n\n" + JSON.stringify(post, null, 2));
-  } catch (err) {
-    console.error(err);
-    alert('Error loading post');
-  }
+// =====================================================
+// ================== IMAGE MODAL ======================
+// =====================================================
+const modalOverlay     = document.getElementById('changeImageModal');
+const uploadPhotoBtn   = document.getElementById('uploadPhotoBtn');
+const removePhotoBtn   = document.getElementById('removePhotoBtn');
+const cancelModalBtn   = document.getElementById('cancelModalBtn');
+const profileFileInput = document.getElementById('profileFileInput');
+const coverFileInput   = document.getElementById('coverFileInput');
+const modalTitle       = document.getElementById('modalTitle');
+let currentImageType   = '';
+
+function enableImageModalControls() {
+  document.getElementById('groupImage')?.addEventListener('click', () => {
+    currentImageType = 'profile';
+    modalTitle.innerText = 'Change Profile Photo';
+    modalOverlay.classList.remove('hidden');
+  });
+
+  document.getElementById('groupCoverImage')?.addEventListener('click', () => {
+    currentImageType = 'cover';
+    modalTitle.innerText = 'Change Cover Photo';
+    modalOverlay.classList.remove('hidden');
+  });
+
+  uploadPhotoBtn?.addEventListener('click', () => {
+    modalOverlay.classList.add('hidden');
+    if (currentImageType === 'profile') profileFileInput.click();
+    else coverFileInput.click();
+  });
+
+  removePhotoBtn?.addEventListener('click', () => {
+    modalOverlay.classList.add('hidden');
+    removeImage(currentImageType);
+  });
+
+  cancelModalBtn?.addEventListener('click', () => {
+    modalOverlay.classList.add('hidden');
+  });
 }
 
-// Image modal logic
-const modalOverlay = document.getElementById('changeImageModal');
-const uploadPhotoBtn = document.getElementById('uploadPhotoBtn');
-const removePhotoBtn = document.getElementById('removePhotoBtn');
-const cancelModalBtn = document.getElementById('cancelModalBtn');
-const profileFileInput = document.getElementById('profileFileInput');
-const coverFileInput = document.getElementById('coverFileInput');
-const modalTitle = document.getElementById('modalTitle');
-let currentImageType = '';
-
-cancelModalBtn.addEventListener('click', () => {
-  modalOverlay.classList.add('hidden');
-});
-
-profileFileInput.addEventListener('change', e => {
+profileFileInput?.addEventListener('change', e => {
   const file = e.target.files[0];
   if (file) uploadImage(file, 'profile');
 });
-coverFileInput.addEventListener('change', e => {
+coverFileInput?.addEventListener('change', e => {
   const file = e.target.files[0];
   if (file) uploadImage(file, 'cover');
 });
 
 async function uploadImage(file, type) {
+  if (!groupId) return; // only for group mode
   const form = new FormData();
   form.append(type === 'profile' ? 'groupImage' : 'groupCover', file);
   try {
@@ -297,9 +309,8 @@ async function uploadImage(file, type) {
       body: form
     });
     const data = await res.json();
-    const imgEl = type === 'profile'
-      ? document.getElementById('groupImage')
-      : document.getElementById('groupCoverImage');
+    const imgEl = (type === 'profile') ? document.getElementById('groupImage')
+                                       : document.getElementById('groupCoverImage');
     imgEl.src = fixImageUrl(data.url);
   } catch (err) {
     console.error(err);
@@ -308,40 +319,45 @@ async function uploadImage(file, type) {
 }
 
 async function removeImage(type) {
+  if (!groupId) return;
   try {
     await fetch(`${backendURL}/api/groups/${groupId}/${type}-remove`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     });
-    const imgEl = type === 'profile'
-      ? document.getElementById('groupImage')
-      : document.getElementById('groupCoverImage');
-    imgEl.src = type === 'profile' ? DEFAULT_AVATAR : DEFAULT_COVER;
+    const imgEl = (type === 'profile') ? document.getElementById('groupImage')
+                                       : document.getElementById('groupCoverImage');
+    imgEl.src = (type === 'profile') ? DEFAULT_AVATAR : DEFAULT_COVER;
   } catch (err) {
     console.error(err);
     alert('Error removing image');
   }
 }
 
-// Group edit modal
-const editGroupModal = document.getElementById('editGroupModal');
+// =====================================================
+// ================== EDIT GROUP MODAL =================
+// =====================================================
+const editGroupModal    = document.getElementById('editGroupModal');
 const saveGroupChangesBtn = document.getElementById('saveGroupChangesBtn');
-const editNameInput = document.getElementById('editGroupName');
-const editDescInput = document.getElementById('editGroupDescription');
-const membersListDiv = document.getElementById('editGroupMembersList');
+const editNameInput     = document.getElementById('editGroupName');
+const editDescInput     = document.getElementById('editGroupDescription');
+const membersListDiv    = document.getElementById('editGroupMembersList');
 
 function openEditModal() {
   if (!currentGroup || !isAdmin) return;
-  editNameInput.value = currentGroup.name;
-  editDescInput.value = currentGroup.description;
+  editNameInput.value = currentGroup.name || '';
+  editDescInput.value = currentGroup.description || '';
   membersListDiv.innerHTML = '';
 
-  currentGroup.members.forEach(member => {
-    const isMemberAdmin = currentGroup.admin._id?.toString() === member._id?.toString();
+  (currentGroup.members || []).forEach(m => {
+    const mid  = String(typeof m === 'string' ? m : m._id);
+    const name = typeof m === 'object' ? (m.username || mid) : mid;
+    const isMemberAdmin = String(typeof currentGroup.admin === 'object' ? currentGroup.admin._id : currentGroup.admin) === mid;
+
     const div = document.createElement('div');
     div.innerHTML = `
-      ${member.username} ${isMemberAdmin ? '(Admin)' : ''}
-      ${!isMemberAdmin ? `<button onclick="removeMember('${member._id}')">Remove</button>` : ''}
+      ${name} ${isMemberAdmin ? '(Admin)' : ''}
+      ${!isMemberAdmin ? `<button onclick="removeMember('${mid}')">Remove</button>` : ''}
     `;
     membersListDiv.appendChild(div);
   });
@@ -353,19 +369,16 @@ function closeEditModal() {
   editGroupModal.classList.add('hidden');
 }
 
-saveGroupChangesBtn.addEventListener('click', async () => {
+saveGroupChangesBtn?.addEventListener('click', async () => {
   try {
     const updatedName = editNameInput.value.trim();
     const updatedDesc = editDescInput.value.trim();
 
-   const res = await fetch(`${backendURL}/api/groups/${groupId}`, {
-  method: 'PATCH',
-  headers: {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token}`
-  },
-  body: JSON.stringify({ name: updatedName, description: updatedDesc })
-});
+    const res = await fetch(`${backendURL}/api/groups/${groupId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name: updatedName, description: updatedDesc })
+    });
 
     if (!res.ok) {
       const data = await res.json();
@@ -387,10 +400,7 @@ async function removeMember(memberId) {
   try {
     const res = await fetch(`${backendURL}/api/groups/${groupId}/remove-member`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ memberId })
     });
 
@@ -407,11 +417,15 @@ async function removeMember(memberId) {
     alert('Server error');
   }
 }
+
+// =====================================================
+// ================== CREATE POST BOX ==================
+// =====================================================
 const mediaInput = document.getElementById('postMedia');
 const previewImg = document.getElementById('previewImage');
 const previewVid = document.getElementById('previewVideo');
 
-mediaInput.addEventListener('change', e => {
+mediaInput?.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
 
@@ -428,7 +442,7 @@ mediaInput.addEventListener('change', e => {
   }
 });
 
-document.getElementById('submitPostBtn').addEventListener('click', async () => {
+document.getElementById('submitPostBtn')?.addEventListener('click', async () => {
   const content = document.getElementById('postContent').value.trim();
   const file = mediaInput.files[0];
 
@@ -438,16 +452,14 @@ document.getElementById('submitPostBtn').addEventListener('click', async () => {
   }
 
   const form = new FormData();
-  if (file) form.append('file', file);
+  if (file)    form.append('file', file);
   if (content) form.append('content', content);
-  if (typeof groupId !== 'undefined') form.append('group', groupId);
+  if (groupId) form.append('group', groupId); // only when we’re inside a group
 
   try {
     const res = await fetch(`${backendURL}/api/posts`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
+      headers: { Authorization: `Bearer ${token}` },
       body: form
     });
 
@@ -460,16 +472,14 @@ document.getElementById('submitPostBtn').addEventListener('click', async () => {
     previewImg.style.display = 'none';
     previewVid.style.display = 'none';
 
-    if (typeof loadGroupPosts !== 'undefined') {
-      await loadGroupPosts();
-    } else {
-      await loadFeed();
-    }
+    if (groupId) await loadGroupPosts(); // refresh group feed if relevant
   } catch (err) {
     console.error('Upload post error:', err);
     alert('Error uploading post');
   }
 });
+
+// Comments/likes (used in group mode)
 async function submitComment(postId, inputElement) {
   const text = inputElement.value.trim();
   if (!text) return;
@@ -477,10 +487,7 @@ async function submitComment(postId, inputElement) {
   try {
     const res = await fetch(`${backendURL}/api/posts/${postId}/comments`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ text })
     });
 
@@ -488,13 +495,14 @@ async function submitComment(postId, inputElement) {
     if (!res.ok) throw new Error(updatedPost.message || 'Failed to add comment');
 
     inputElement.value = '';
-    await loadGroupPosts(); // טען מחדש את הפוסטים
+    if (groupId) await loadGroupPosts();
   } catch (err) {
     console.error('Error adding comment:', err);
     alert(err.message);
   }
 }
-async function toggleLike(postId, icon) {
+
+async function toggleLike(postId) {
   try {
     const res = await fetch(`${backendURL}/api/posts/${postId}/like`, {
       method: 'PATCH',
@@ -502,7 +510,7 @@ async function toggleLike(postId, icon) {
     });
 
     if (!res.ok) throw new Error('Failed to toggle like');
-    await loadGroupPosts();
+    if (groupId) await loadGroupPosts();
   } catch (err) {
     console.error('Like error:', err);
     alert('Error toggling like');
