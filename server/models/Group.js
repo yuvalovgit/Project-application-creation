@@ -1,39 +1,32 @@
 const mongoose = require('mongoose');
 
 const GroupSchema = new mongoose.Schema({
-  name: { type: String, required: true, unique: true },
-  description: { type: String },
-  topic: { type: String },
-  image: { type: String, default: '/uploads/default-avatar.png' },    // תמונת פרופיל
-  cover: { type: String, default: '/uploads/default-cover.jpg' },      // תמונת נושא (Cover)
+  name: { type: String, required: true, unique: true, trim: true },
+  description: { type: String, default: '' },
+  topic: { type: String, default: 'general' },
+  image: { type: String, default: '/uploads/default-avatar.png' },
+  cover: { type: String, default: '/uploads/default-cover.jpg' },
 
-  // חברים רשומים
   members: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     default: []
   }],
 
-  // מי יצר את הקבוצה
+  // admin is optional now
   admin: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false,
+    default: null
   },
 
-  // האם קבוצה פרטית?
-  isPrivate: {
-    type: Boolean,
-    default: false
-  },
-
-  // בקשות הצטרפות שממתינות לאישור (אם פרטי)
+  isPrivate: { type: Boolean, default: false },
   pendingRequests: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }]
-}, {
-  timestamps: true // מוסיף createdAt ו־updatedAt
-});
+}, { timestamps: true });
 
-module.exports = mongoose.model('Group', GroupSchema);
+// 👇 This line avoids the OverwriteModelError
+module.exports = mongoose.models.Group || mongoose.model('Group', GroupSchema);
