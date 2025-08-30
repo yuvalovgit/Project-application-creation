@@ -1,9 +1,18 @@
 const backendURL = 'http://localhost:5000';
 
-const token     = localStorage.getItem('token');
-const userId    = localStorage.getItem('userId');
+const token    = localStorage.getItem('token');
+const userId   = localStorage.getItem('userId');
 const urlParams = new URLSearchParams(window.location.search);
-const groupId   = urlParams.get('groupId');
+const groupId  = urlParams.get('groupId');
+
+function escapeHtml(str='') {
+  return String(str)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#39;');
+}
 
 // ---- Auth guard (groupId is OPTIONAL) ----
 if (!token || !userId) {
@@ -57,68 +66,170 @@ function enterCreateOnlyMode() {
 let currentGroup = null;
 let isAdmin = false;
 
+
 async function loadGroupProfile() {
   try {
     const res = await fetch(`${backendURL}/api/groups/${groupId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Failed to load group');
+
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Failed to load group (${res.status}): ${text}`);
+    }
+
     const group = await res.json();
     currentGroup = group;
 
-    // Normalize adminId
-    const adminId = group.admin
-      ? (typeof group.admin === 'object' ? String(group.admin._id) : String(group.admin))
-      : null;
+    // --- נרמול מזהים ---
+    const toId = v => (v && typeof v === 'object' ? v._id : v);
+    const adminId = group.admin ? String(toId(group.admin)) : null;
+    const memberIds = Array.isArray(group.members) ? group.members.map(m => String(toId(m))) : [];
 
-    isAdmin = adminId && String(adminId) === String(userId);
+    // --- סטטוסים ---
+    isAdmin = !!adminId && adminId === String(userId);
+    const isMember = memberIds.includes(String(userId));
 
-    // Normalize membership (members may be strings or objects)
-    const isMember = (group.members || []).some(m =>
-      (typeof m === 'string' ? m : m?._id) && String(typeof m === 'string' ? m : m._id) === String(userId)
-    );
+    // --- DOM refs ---
+    const imgEl        = document.getElementById('groupImage');
+    const coverEl      = document.getElementById('groupCoverImage');
+    const nameEl       = document.getElementById('groupName');
+    const descEl       = document.getElementById('groupDescription');
+    const topicEl      = document.getElementById('groupCategory');
+    const membersEl    = document.getElementById('groupMembersCount');
+    const postsCountEl = document.getElementById('groupPostsCount');
+    const adminInfoEl  = document.getElementById('adminInfo');
+    const joinBtn      = document.getElementById('joinLeaveBtn');
+    const editBtn      = document.getElementById('editGroupBtn');
+    const deleteBtn    = document.getElementById('deleteGroupBtn'); // הוסף ב‑HTML אם חסר
 
-    // Fill header
-    document.getElementById('groupImage').src       = group.image ? fixImageUrl(group.image) : DEFAULT_AVATAR;
-    document.getElementById('groupCoverImage').src  = group.cover ? fixImageUrl(group.cover) : DEFAULT_COVER;
-    document.getElementById('groupName').textContent        = group.name || '';
-    document.getElementById('groupDescription').textContent = group.description || '';
-    document.getElementById('groupCategory').textContent    = '#' + (group.topic || 'general');
-    document.getElementById('groupMembersCount').textContent = (group.members || []).length;
-    document.getElementById('groupPostsCount').textContent   = (group.posts || []).length || 0;
+    // --- מילוי UI בסיסי ---
+    if (imgEl)   imgEl.src   = group.image ? fixImageUrl(group.image) : DEFAULT_AVATAR;
+    if (coverEl) coverEl.src = group.cover ? fixImageUrl(group.cover) : DEFAULT_COVER;
 
-    const adminInfo = document.getElementById('adminInfo');
-    if (isAdmin) {
-      adminInfo.textContent = 'You are the admin of this group';
-      adminInfo.style.color = '#1c8a00';
-    } else if (typeof group.admin === 'object' && group.admin?.username) {
-      adminInfo.textContent = `Admin: ${group.admin.username}`;
-    } else {
-      adminInfo.textContent = 'Admin: N/A';
+    if (nameEl)  nameEl.textContent = group.name || '';
+    if (descEl)  descEl.textContent = group.description || '';
+    if (topicEl) topicEl.textContent = `#${group.topic || 'general'}`;
+
+    if (membersEl)    membersEl.textContent = memberIds.length;
+    if (postsCountEl) postsCountEl.textContent = Array.isArray(group.posts) ? group.posts.length : (group.posts || 0);
+
+    // --- מידע אדמין ---
+    if (adminInfoEl) {
+      if (isAdmin) {
+        adminInfoEl.textContent = 'You are the admin of this group';
+        adminInfoEl.style.color = '#1c8a00';
+      } else if (group.admin && typeof group.admin === 'object') {
+        adminInfoEl.textContent = `Admin: ${group.admin.username || 'N/A'}`;
+        adminInfoEl.style.color = '#777';
+      } else {
+        adminInfoEl.textContent = 'Admin: N/A';
+        adminInfoEl.style.color = '#777';
+      }
     }
 
-    const joinBtn = document.getElementById('joinLeaveBtn');
-    joinBtn.textContent = isMember ? 'Leave Group' : 'Join Group';
-    joinBtn.onclick = () => isMember ? leaveGroup(groupId) : joinGroup(groupId);
+    // --- Join/Leave ---
+    if (joinBtn) {
+      const setJoinUi = (member) => {
+        joinBtn.textContent = member ? 'Leave Group' : 'Join Group';
+        joinBtn.dataset.state = member ? 'leave' : 'join';
+      };
+      setJoinUi(isMember);
 
-    const editBtn = document.getElementById('editGroupBtn');
-    if (isAdmin) {
-      editBtn.style.display = 'inline-block';
-      editBtn.onclick = openEditModal;
 
-      // Enable image modal controls for admin
-      enableImageModalControls();
-    } else {
-      editBtn.style.display = 'none';
+      joinBtn.onclick = async () => {
+        try {
+          joinBtn.disabled = true;
+          if (joinBtn.dataset.state === 'join') await joinGroup(groupId);
+          else await leaveGroup(groupId);
+          await loadGroupProfile();
+        } finally {
+          joinBtn.disabled = false;
+        }
+      };
     }
+
+    // --- עריכה (אדמין בלבד) ---
+    if (editBtn) {
+      if (isAdmin) {
+        editBtn.style.display = 'inline-block';
+        editBtn.onclick = openEditModal;
+      } else {
+        editBtn.style.display = 'none';
+        editBtn.onclick = null;
+      }
+    }
+
+    // --- מחיקת קבוצה (אדמין בלבד) ---
+    if (deleteBtn) {
+      if (isAdmin) {
+        deleteBtn.style.display = 'inline-block';
+        deleteBtn.onclick = async () => {
+          if (!confirm('Are you sure you want to delete this group? This cannot be undone.')) return;
+          const delRes = await fetch(`${backendURL}/api/groups/${groupId}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (!delRes.ok) {
+            const t = await delRes.text();
+            alert(`Failed to delete group: ${t}`);
+            return;
+          }
+          alert('Group deleted successfully');
+          location.href = 'creation-group.html';
+        };
+      } else {
+        deleteBtn.style.display = 'none';
+        deleteBtn.onclick = null;
+      }
+    }
+
+    // --- החלפת תמונות (אדמין בלבד) ---
+    if (isAdmin) {
+      if (imgEl) {
+        imgEl.onclick = () => {
+          currentImageType = 'profile';
+          modalTitle.innerText = 'Change Profile Photo';
+          modalOverlay.classList.remove('hidden');
+        };
+      }
+      if (coverEl) {
+        coverEl.onclick = () => {
+          currentImageType = 'cover';
+          modalTitle.innerText = 'Change Cover Photo';
+          modalOverlay.classList.remove('hidden');
+        };
+      }
+      uploadPhotoBtn.onclick = () => {
+        modalOverlay.classList.add('hidden');
+        (currentImageType === 'profile' ? profileFileInput : coverFileInput).click();
+      };
+      removePhotoBtn.onclick = () => {
+        modalOverlay.classList.add('hidden');
+        removeImage(currentImageType);
+      };
+    } else {
+      if (imgEl)   imgEl.onclick = null;
+      if (coverEl) coverEl.onclick = null;
+    }
+
+    // --- פוסטים של הקבוצה ---
 
     await loadGroupPosts();
-
   } catch (err) {
     console.error('loadGroupProfile error:', err);
     alert('Error loading group profile');
   }
 }
+
+
+
+
+
+
+
+
 
 async function loadGroupPosts() {
   try {
@@ -135,8 +246,10 @@ async function loadGroupPosts() {
       const postEl = document.createElement('div');
       postEl.className = 'group-post';
 
-      const postId = typeof post._id === 'object' ? String(post._id) : String(post._id);
-      const isLiked = (post.likes || []).some(id => String(id) === String(userId));
+
+      const postId = typeof post._id === 'object' ? post._id.toString() : post._id;
+      const isLiked = Array.isArray(post.likes) && post.likes.includes(userId);
+
       const likeIconClass = isLiked ? 'fas' : 'far';
 
       const lastComments = (post.comments || []).slice(-2).map(c => `
@@ -145,18 +258,57 @@ async function loadGroupPosts() {
         </div>
       `).join('');
 
-      postEl.innerHTML = `
-        <div class="post-header">
-          <img src="${fixImageUrl(post.author?.profileImage || '/uploads/default-avatar.png')}" class="avatar">
-          <div class="post-author">
-            <b>${post.author?.username || 'Unknown'}</b>
-            <span class="post-time">${new Date(post.createdAt).toLocaleString()}</span>
-          </div>
-          <div class="post-options">⋯</div>
-        </div>
+      // --- מחבר נתוני מחבר הפוסט ---
+      const authorId   = post.author?._id || '';
+      const authorName = post.author?.username || 'Unknown';
 
-        ${post.image ? `<img src="${fixImageUrl(post.image)}" class="post-media" />` : ''}
-        ${post.video ? `<video src="${fixImageUrl(post.video)}" class="post-media" controls></video>` : ''}
+      // מנסה שדות שונים לתמונת פרופיל, עם ברירת מחדל
+      const rawAvatar =
+        post.author?.profileImage ||
+        post.author?.avatar ||
+        post.author?.image ||
+        post.author?.profilePicture ||
+        post.author?.avatarUrl ||
+        '/uploads/default-avatar.png';
+
+      const authorImg  = fixImageUrl(rawAvatar);
+      const profileUrl = authorId ? `profile.html?userId=${encodeURIComponent(authorId)}` : '#';
+
+      // --- בניית הפוסט ---
+   postEl.innerHTML = `
+  <div class="post-header" style="display:flex;align-items:center;gap:10px;padding:8px 10px;">
+    <img src="${authorImg}"
+         alt="${authorName}"
+         class="avatar"
+         style="width:35px;height:35px;border-radius:50%;object-fit:cover;cursor:pointer;"
+         onclick="window.location.href='${profileUrl}'"
+         onerror="this.onerror=null; this.src='${fixImageUrl('/uploads/default-avatar.png')}';" />
+
+    <a href="${profileUrl}"
+       class="post-author-link"
+       style="color:#000;font-weight:600;text-decoration:none;cursor:pointer;">
+      ${authorName}
+    </a>
+
+    <span class="post-time" style="color:#777;font-size:12px;margin-left:auto;">
+      ${post.createdAt ? new Date(post.createdAt).toLocaleString() : ''}
+    </span>
+
+    ${
+      (authorId && authorId === userId)
+      ? `
+        <button class="post-options-btn" aria-haspopup="menu" aria-expanded="false" data-post="${postId}">⋯</button>
+        <div class="post-menu hidden" id="post-menu-${postId}">
+          <button class="menu-edit"   data-post="${postId}" data-caption="${escapeHtml(post.content || '')}">Edit caption</button>
+          <button class="menu-delete" data-post="${postId}">Delete</button>
+        </div>
+      `
+      : ''
+    }
+  </div>
+
+  ${post.image ? `<img src="${fixImageUrl(post.image)}" class="post-media" />` : ''}
+  ${post.video ? `<video src="${fixImageUrl(post.video)}" class="post-media" controls></video>` : ''}
 
         <div class="post-actions">
           <i class="${likeIconClass} fa-heart" onclick="toggleLike('${postId}', this)"></i>
@@ -169,7 +321,8 @@ async function loadGroupPosts() {
         </div>
 
         <div class="post-caption">
-          <strong>${post.author?.username || 'Unknown'}</strong> ${post.content || ''}
+          <strong><a href="${profileUrl}" style="color:inherit;text-decoration:none;">${authorName}</a></strong>
+          ${post.content || ''}
         </div>
 
         <div class="post-comments">
@@ -177,10 +330,11 @@ async function loadGroupPosts() {
           ${(post.comments?.length || 0) > 2 ? `<a href="#">View all ${post.comments.length} comments</a>` : ''}
         </div>
 
-        ${(isAdmin || String(post.author?._id) === String(userId))
-          ? `<button class="delete-btn" onclick="deleteGroupPost('${postId}')">Delete</button>`
-          : ''
-        }
+        <div class="post-add-comment">
+          <input type="text" placeholder="Add a comment..."
+            onkeypress="if(event.key === 'Enter') submitComment('${postId}', this)" />
+        </div>
+
       `;
 
       postsGrid.appendChild(postEl);
@@ -363,6 +517,8 @@ function openEditModal() {
   });
 
   editGroupModal.classList.remove('hidden');
+  
+
 }
 
 function closeEditModal() {

@@ -28,14 +28,16 @@
         <div class="profile-top-row" style="display: flex; align-items: center; gap: 10px;">
           <h2 id="username">Username</h2>
 
-          <!-- כפתורים לפרופיל שלך -->
+          <!-- Buttons for own profile -->
           <div id="ownProfileControls" style="display: none; gap: 10px;">
             <button class="btn edit-profile-btn">Edit profile</button>
             <button class="btn view-archive-btn">View archive</button>
-            <button class="btn settings-btn"><i class="fa fa-cog"></i></button>
+            <button class="btn settings-btn" aria-haspopup="dialog" aria-controls="settingsModal" title="Settings">
+              <i class="fa fa-cog"></i>
+            </button>
           </div>
 
-          <!-- כפתורים לפרופיל של משתמש אחר -->
+          <!-- Buttons for viewing someone else's profile -->
           <div id="otherProfileControls" style="display: none; gap: 10px;">
             <button id="followBtn" class="btn follow-btn">Follow</button>
             <button id="messageBtn" class="btn message-btn">Message</button>
@@ -52,50 +54,47 @@
 
         <div class="profile-verified">
           <span>@username</span>
-          <i class="fa fa-check-circle verified-icon"></i>
+          <i class="fa fa-check-circle verified-icon" aria-label="Verified account"></i>
         </div>
       </div>
     </div>
 
     <div class="profile-stories">
-      <div class="story"><img src="story1.jpg" alt="Story 1" /><span>Brazil</span></div>
-      <div class="story"><img src="story2.jpg" alt="Story 2" /><span>Panama</span></div>
-      <div class="story"><img src="story3.jpg" alt="Story 3" /><span>Ecuador</span></div>
     </div>
 
     <div id="postsGrid" class="posts-grid"></div>
   </div>
 
-  <!-- Modal לשינוי תמונת פרופיל -->
-  <div id="profileModal" class="modal confirm-modal hidden">
+  <!-- Modal: change profile photo -->
+  <div id="profileModal" class="modal confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
     <div class="modal-content">
-      <h3>Change Profile Photo</h3>
+      <h3 id="profileModalTitle">Change Profile Photo</h3>
       <button id="uploadPhotoBtn" class="modal-btn upload-btn">Upload Photo</button>
       <button id="removePhotoBtn" class="modal-btn remove-btn">Remove Current Photo</button>
       <button id="cancelBtn" class="modal-btn cancel-btn">Cancel</button>
     </div>
   </div>
 
-  <!-- Modal להצגת פוסט -->
-  <div id="postModal" class="modal hidden">
+  <!-- Modal: view post -->
+  <div id="postModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="postModalTitle">
     <div class="modal-content" style="display:flex; flex-direction:row; gap:20px;">
       <div class="modal-image-container">
-        <div id="postModalImage"></div>
+        <div id="postModalImage" aria-live="polite"></div>
       </div>
 
       <div class="modal-content-container" style="flex:1;">
         <div class="post-header" style="display:flex; align-items:center; gap:10px; margin-bottom:15px;">
           <img id="postAuthorAvatar" src="default-avatar.png" alt="Author Avatar" style="width:35px; height:35px; border-radius:50%; object-fit:cover;">
           <span id="postAuthorUsername" style="font-weight:700; font-size:1rem;">username</span>
-          <button class="modal-options-btn" style="background:none; border:none; color:#fff; font-size:24px; cursor:pointer; margin-left:auto;">⋯</button>
+          <button class="modal-options-btn" style="background:none; border:none; color:#fff; font-size:24px; cursor:pointer; margin-left:auto;" aria-label="Post options">⋯</button>
         </div>
 
         <div id="postComments" style="flex-grow:1; overflow-y:auto; border-top:1px solid #444; padding-top:10px; color:#eee;">
-          <!-- תגובות יכנסו כאן -->
+          <!-- Comments go here -->
         </div>
 
         <div class="modal-footer" style="border-top:1px solid #444; padding-top:10px; margin-top:10px;">
-          <button id="likeBtn" style="background:none; border:none; font-size:24px; cursor:pointer;">♡</button>
+          <button id="likeBtn" style="background:none; border:none; font-size:24px; cursor:pointer;" aria-pressed="false" aria-label="Like">♡</button>
           <span id="likesCount" style="margin-left:8px;">0 likes</span>
 
           <form id="commentForm" style="display:flex; gap:10px; margin-top:10px;">
@@ -105,21 +104,21 @@
         </div>
       </div>
     </div>
-    <button id="closePostModalBtn" class="close-btn" style="position:absolute; top:10px; right:15px; font-size:30px; background:none; border:none; color:#fff;">&times;</button>
+    <button id="closePostModalBtn" class="close-btn" style="position:absolute; top:10px; right:15px; font-size:30px; background:none; border:none; color:#fff;" aria-label="Close post modal">&times;</button>
   </div>
 
-  <!-- Modal למחיקת פוסט -->
-  <div id="deleteModal" class="modal confirm-modal hidden">
+  <!-- Modal: remove post -->
+  <div id="deleteModal" class="modal confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
     <div class="modal-content">
-      <h3>Are you sure you want to remove this post?</h3>
+      <h3 id="deleteModalTitle">Are you sure you want to remove this post?</h3>
       <button id="confirmDeleteBtn" class="remove-btn">Remove</button>
       <button id="cancelDeleteBtn" class="cancel-btn">Cancel</button>
     </div>
   </div>
 
-  <!-- סרגל צד -->
+  <!-- Sidebar -->
   <div class="sidebar">
-    <h2>Instagram</h2>
+      <img src="images/login/instaLogo.png" alt="Instagram Logo" style="width:140px; margin-bottom:40px;" />
     <ul>
       <li><a href="feed.html"><i class="fas fa-house"></i> <span class="link-text">Home</span></a></li>
       <li><a href="#"><i class="fas fa-magnifying-glass"></i> <span class="link-text">Search</span></a></li>
@@ -138,7 +137,7 @@
     </ul>
   </div>
 
-  <!-- ניווט תחתון -->
+  <!-- Bottom nav -->
   <nav class="bottom-nav justify-content-evenly align-items-center bg-black text-white py-2 position-fixed bottom-0 w-100 border-top border-dark" style="z-index: 999;">
     <a href="feed.html" class="text-white"><i class="fas fa-home fa-lg"></i></a>
     <a href="#"><i class="fas fa-compass fa-lg"></i></a>
@@ -147,6 +146,110 @@
     <a href="#"><i class="fas fa-envelope fa-lg"></i></a>
     <a href="profile.html" class="text-white"><i class="far fa-user fa-lg"></i></a>
   </nav>
+
+  <!-- ===================== NEW: Settings modal (with Delete Account & Logout) ===================== -->
+  <div id="settingsModal" class="modal overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+    <div class="modal-content">
+      <div class="modal-header" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <h3 id="settingsModalTitle" style="margin:0;">Settings</h3>
+        <button id="closeSettingsBtn" class="close-btn" aria-label="Close settings">&times;</button>
+      </div>
+
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:10px;">
+        <button id="accountSettingsBtn" class="modal-btn">Account settings</button>
+        <button id="privacySettingsBtn" class="modal-btn">Privacy</button>
+        <button id="securitySettingsBtn" class="modal-btn">Security</button>
+        <hr/>
+        <button id="deleteAccountBtn" class="modal-btn danger-btn">Delete my account</button>
+        <button id="logoutBtn" class="modal-btn">Log out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== NEW: Edit Profile modal ===================== -->
+  <div id="editProfileModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="editProfileTitle">
+    <div class="modal-content" style="max-width:420px;">
+      <div class="modal-header">
+        <h3 id="editProfileTitle">Edit profile</h3>
+        <button id="closeEditProfileBtn" class="close-btn" aria-label="Close edit profile">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <label style="display:block; font-size:.9rem; margin-bottom:6px;">Name</label>
+        <input id="editNameInput" type="text" placeholder="Your name" />
+
+        <label style="display:block; font-size:.9rem; margin:10px 0 6px;">Username</label>
+        <input id="editUsernameInput" type="text" placeholder="username" />
+
+        <label style="display:block; font-size:.9rem; margin:10px 0 6px;">Bio</label>
+        <textarea id="editBioInput" rows="3" placeholder="Tell people about you" style="resize:vertical;"></textarea>
+
+        <div style="display:flex; gap:10px; margin-top:14px;">
+          <button id="saveProfileBtn" class="modal-btn" style="flex:1;">Save changes</button>
+          <button id="cancelEditProfileBtn" class="cancel-btn" style="flex:1;">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== NEW: Delete Account confirm modal ===================== -->
+  <div id="deleteAccountModal" class="modal confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="deleteAccountTitle">
+    <div class="modal-content">
+      <h3 id="deleteAccountTitle">Delete Account</h3>
+      <p style="margin-top:6px;">
+        This action is <strong>permanent</strong>. Your profile, posts, comments, and followers will be removed.
+      </p>
+
+      <div style="margin-top:10px;">
+        <label for="deleteConfirmInput" style="display:block; margin-bottom:6px;">Type <strong>DELETE</strong> to confirm:</label>
+        <input id="deleteConfirmInput" type="text" placeholder="DELETE" style="width:100%; padding:8px; border-radius:6px; border:none;">
+      </div>
+
+      <div style="margin-top:10px; display:flex; align-items:center; gap:8px;">
+        <input id="deleteAcknowledge" type="checkbox" />
+        <label for="deleteAcknowledge">I understand that this cannot be undone.</label>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button id="confirmDeleteAccountBtn" class="remove-btn" disabled>Delete account</button>
+        <button id="cancelDeleteAccountBtn" class="cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== NEW: Create Post modal ===================== -->
+  <div id="createPostModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="createPostTitle">
+    <div class="modal-content" style="max-width:520px;">
+      <div class="modal-header">
+        <h3 id="createPostTitle">Create a new post</h3>
+        <button id="closeCreateModalBtn" class="close-btn" aria-label="Close create post">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Preview box -->
+        <div id="createPreview" style="display:flex;align-items:center;justify-content:center;min-height:180px;border:1px dashed #2a2a2a;border-radius:12px;background:#0f0f0f;">
+          <span style="color:#9b9b9b;">No media selected</span>
+        </div>
+
+        <!-- Pick/Clear -->
+        <div style="display:flex;gap:10px;margin-top:10px;">
+          <button id="pickMediaBtn" class="modal-btn" style="flex:1;">Choose image/video</button>
+          <button id="clearMediaBtn" class="cancel-btn" style="flex:1;">Clear</button>
+        </div>
+
+        <!-- Caption -->
+        <label style="display:block;font-size:.9rem;margin:10px 0 6px;">Caption</label>
+        <textarea id="createCaptionInput" rows="3" placeholder="Write something..." style="resize:vertical;"></textarea>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:10px;margin-top:14px;">
+          <button id="createSubmitBtn" class="modal-btn" style="flex:1;" disabled>Post</button>
+          <button id="cancelCreateBtn" class="cancel-btn" style="flex:1;">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ===================== END NEW ===================== -->
 
   <script src="profile.js"></script>
 </body>

@@ -499,3 +499,364 @@ body {
   overflow-y: auto;
   margin-bottom: 10px;
 }
+/* ====================== Modals: base ====================== */
+.hidden { display: none !important; }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  padding: 20px;
+  opacity: 1;
+  transition: opacity .2s ease-in-out;
+}
+
+.modal.confirm-modal { /* can share the same base */ }
+
+.modal .modal-content {
+  width: 100%;
+  max-width: 520px;
+  background: #121212;          /* dark surface */
+  color: #eaeaea;               /* text */
+  border: 1px solid #2a2a2a;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  padding: 18px;
+  animation: popIn .16s ease-out;
+}
+
+@keyframes popIn {
+  from { transform: translateY(6px) scale(0.98); opacity: .9; }
+  to   { transform: translateY(0)    scale(1);    opacity: 1; }
+}
+
+/* ====================== Modal header/body ====================== */
+.modal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.modal .modal-header h3,
+.modal .modal-content h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: .2px;
+}
+
+.modal .modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ====================== Buttons ====================== */
+.btn,
+.modal-btn,
+.remove-btn,
+.cancel-btn,
+.danger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: #222;            /* neutral default */
+  color: #eaeaea;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, transform .04s ease;
+  user-select: none;
+}
+
+.btn:hover,
+.modal-btn:hover,
+.remove-btn:hover,
+.cancel-btn:hover,
+.danger-btn:hover {
+  background: #2a2a2a;
+}
+
+.btn:active,
+.modal-btn:active,
+.remove-btn:active,
+.cancel-btn:active,
+.danger-btn:active {
+  transform: translateY(1px);
+}
+
+/* Primary/neutral variants used in modals */
+.modal-btn { background: #1e1e1e; }
+.modal-btn:hover { background: #262626; }
+
+.cancel-btn {
+  background: transparent;
+  border-color: #3a3a3a;
+  color: #cfcfcf;
+}
+.cancel-btn:hover { background: #1b1b1b; }
+
+.remove-btn,
+.danger-btn {
+  background: #c62828;                /* red */
+  color: #fff;
+  border-color: #c62828;
+}
+.remove-btn:hover,
+.danger-btn:hover {
+  background: #b71c1c;
+  border-color: #b71c1c;
+}
+
+/* Disabled confirm button */
+.remove-btn:disabled,
+.danger-btn:disabled,
+.modal-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  filter: grayscale(30%);
+}
+
+/* ====================== Close (X) button ====================== */
+.close-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: #9e9e9e;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background .15s ease, color .15s ease;
+}
+.close-btn:hover {
+  background: #1f1f1f;
+  color: #fff;
+}
+
+/* ====================== Inputs inside modals ====================== */
+#deleteConfirmInput,
+.modal input[type="text"],
+.modal input[type="email"],
+.modal input[type="password"] {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  background: #0f0f0f;
+  color: #eaeaea;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+  font-size: .95rem;
+}
+
+#deleteConfirmInput::placeholder { color: #666; }
+
+#deleteConfirmInput:focus,
+.modal input:focus {
+  border-color: #3f51b5; /* subtle focus blue */
+  box-shadow: 0 0 0 3px rgba(63,81,181,.25);
+}
+
+/* Checkbox + label alignment */
+.modal input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #3f51b5;
+}
+
+/* ====================== Settings gear button ====================== */
+.settings-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  background: #161616;
+  color: #eaeaea;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, transform .04s ease;
+}
+.settings-btn:hover {
+  background: #1e1e1e;
+  border-color: #3a3a3a;
+}
+.settings-btn i { font-size: 16px; }
+
+/* ====================== Compact Settings Modal ====================== */
+#settingsModal .modal-content {
+  max-width: 280px;          /* קטן ורחב */
+  max-height: 300px;
+  margin: auto;
+  padding: 16px 20px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+#settingsModal .modal-header { display: none; }
+#settingsModal .modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+#settingsModal .modal-body .modal-btn {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  border-radius: 8px;
+}
+#settingsModal .danger-btn {
+  background: #e53935;
+  border-color: #e53935;
+  color: #fff;
+}
+#settingsModal .danger-btn:hover {
+  background: #c62828;
+  border-color: #c62828;
+}
+
+/* ====================== Post modal tweaks (existing) ====================== */
+#postModal .modal-content {
+  max-width: 960px;
+  background: #101010;
+}
+
+/* Comments in post modal */
+.comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+}
+.comment-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.comment-body .comment-text { color: #dcdcdc; }
+.comment-body .comment-time {
+  color: #9b9b9b;
+  font-size: .8rem;
+  margin-top: 2px;
+}
+
+/* Like heart filled */
+#likeBtn .liked { color: #e53935; }
+
+/* ====================== Stories / small UI polish ====================== */
+.story img {
+  border-radius: 50%;
+  border: 2px solid #2e7d32; /* subtle ring */
+}
+
+/* ====================== Responsive ====================== */
+@media (max-width: 520px) {
+  .modal .modal-content {
+    max-width: 100%;
+    padding: 16px;
+  }
+  #postModal .modal-content {
+    flex-direction: column !important;
+    max-width: 100%;
+  }
+}
+
+/* ====================== Utility ====================== */
+hr {
+  border: none;
+  border-top: 1px solid #2a2a2a;
+  margin: 10px 0;
+}
+/* Edit Profile modal size */
+#editProfileModal .modal-content {
+  width: 420px;        /* רוחב קבוע */
+  height: 300px;       /* גובה קבוע */
+  max-width: 90%;      /* לא לחרוג במסכים קטנים */
+  max-height: 90vh;    /* עד 90% מגובה החלון */
+  overflow-y: auto;    /* גלילה פנימית אם יש יותר תוכן */
+}
+
+#editProfileModal textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  background: #0f0f0f;
+  color: #eaeaea;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+#editProfileModal textarea:focus {
+  border-color: #3f51b5;
+  box-shadow: 0 0 0 3px rgba(63,81,181,.25);
+}
+/* Create Post modal sizing + inputs */
+/* Create Post modal size */
+#createPostModal .modal-content {
+  width: 520px;        /* ← רוחב החלון */
+  max-width: 95vw;     /* ← שלא יחרוג במסכים קטנים */
+  height: auto;        /* ← גובה אוטומטי לפי תוכן */
+  max-height: 90vh;    /* ← גובה מקסימלי ביחס למסך */
+}
+
+#createPostModal textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  background: #0f0f0f;
+  color: #eaeaea;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+#createPostModal textarea:focus {
+  border-color: #3f51b5;
+  box-shadow: 0 0 0 3px rgba(63,81,181,.25);
+}
+/* מדיה בתצוגת מקדימה */
+#createPostModal .preview-media {
+  max-width: 100%;
+  max-height: 320px;
+  border-radius: 10px;
+  display: block;
+}
+#postModal .post-header {
+  display: flex;
+  align-items: flex-start; /* שהטקסט יתחיל למעלה ליד האוואטר */
+  gap: 10px;
+}
+
+#postModal .author-text-wrap {
+  display: flex;
+  flex-direction: column; /* username מעל caption */
+  gap: 4px;
+  flex: 1;               /* שיתפוס את כל הרוחב עד כפתור ⋯ */
+}
+
+#postModal #postAuthorUsername {
+  display: block;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+#postModal .caption-box {
+  color: #ddd;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  white-space: pre-wrap; /* שורות חדשות */
+}
+
