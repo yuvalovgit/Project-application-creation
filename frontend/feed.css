@@ -37,7 +37,7 @@ body {
   padding-top: 1rem;
   z-index: 1000;
   width: 220px;
-  height: auto;
+  height: 100vh;     /* 👈 במקום auto */
   box-sizing: border-box;
   display: flex;
 }
@@ -46,9 +46,9 @@ body {
   content: '';
   position: absolute;
   top: 0;
-  right: -25px;
+  right: 0;          /* 👈 שים ב-0 כדי להצמיד לגבול */
   width: 1px;
-  height: 100%;
+  height: 100vh;     /* 👈 דואג לקו עד סוף המסך */
   background-color: #262626;
 }
 
@@ -99,7 +99,6 @@ body {
 }
 
 /*==================== FEED ====================*/
-/*==================== FEED ====================*/
 .feed, .feed-section {
   padding: 20px 0;
   margin: 0 auto;
@@ -107,7 +106,6 @@ body {
   width: 100%;
   max-width: 600px;
 }
-
 
 /*==================== STORIES ====================*/
 .stories, .stories-bar {
@@ -144,7 +142,7 @@ body {
   white-space: nowrap;
 }
 
-/*==================== POSTS ====================*/
+/*==================== POSTS (ישן - אפשר למחוק אם לא צריך) ====================*/
 .post, .card {
   background-color: #000;
   border-radius: 10px;
@@ -313,66 +311,306 @@ body {
     display: none;
   }
 }
-.group-post-card {
-  background: white;
-  color: black;
-  border-radius: 12px;
-  padding: 16px;
-  width: 400px;
-  margin: 30px auto;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+
+/*==================== INSTA POST STYLE ==================*/
+/* ביטול רווחים ומסגרת מסביב, ולהשאיר רק קו מפריד בין פוסטים */
+.insta-post{
+  background:#000;
+  color:#fff;
+  border:none;        /* לא מסגרת שלמה */
+  border-radius:0;    /* בלי פינות מעוגלות */
+  margin:0;           /* בלי רווח אנכי */
+  max-width:600px;
+  width:100%;
+  font-size:14px;
+  font-family:'Roboto', sans-serif;
 }
 
-.group-post-card img,
-.group-post-card video {
-  width: 100%;
-  border-radius: 10px;
-  margin-top: 10px;
+/* קו מפריד של 1px בין פוסטים (לא לראשון) */
+.insta-post + .insta-post{
+  border-top:1px solid #262626;
 }
 
-.group-post-card .post-source {
-  font-size: 14px;
-  margin-bottom: 8px;
-  color: #555;
+
+/* ===== Header ===== */
+.insta-post .post-header {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  gap: 10px;
+  position: relative;
 }
 
-.group-post-card .post-content {
-  margin: 10px 0;
-  font-size: 14px;
+.insta-post .post-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
-.group-post-card .like-btn {
-  background: none;
-  border: none;
-  color: #e1306c;
+.insta-post .post-username {
   font-weight: bold;
-  margin-bottom: 8px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.insta-post .post-time {
+  margin-left: auto;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.insta-post .post-options {
+  margin-left: 10px;
+  cursor: pointer;
+  color: #fff;
+}
+
+/* ===== Media ===== */
+.insta-post .post-media {
+  width: 100%;
+  max-height: 700px;
+  object-fit: cover;
+  display: block;
+}
+
+/* ===== Actions ===== */
+.insta-post .post-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 8px 12px;
+  font-size: 20px;
+}
+
+.insta-post .post-actions i {
   cursor: pointer;
 }
 
-.group-post-card .comments {
-  font-size: 13px;
-  color: #222;
-  margin-bottom: 10px;
+.insta-post .post-actions .save {
+  margin-left: auto;
 }
 
-.group-post-card .comment-form {
+/* ===== Likes ===== */
+.insta-post .post-likes {
+  padding: 0 12px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+/* ===== Caption ===== */
+.insta-post .post-caption {
+  padding: 0 12px;
+  margin-bottom: 6px;
+}
+.insta-post .post-caption strong {
+  margin-right: 5px;
+}
+
+/* ===== Comments ===== */
+.insta-post .post-comments {
+  padding: 0 12px;
+  margin-bottom: 6px;
+}
+.insta-post .post-comments a {
+  color: #aaa;
+  text-decoration: none;
+  font-size: 13px;
+}
+.insta-post .comment-username {
+  font-weight: bold;
+  color: #fff;
+  text-decoration: none;
+}
+
+/* ===== Add Comment ===== */
+.insta-post .comment-form {
+  border-top: 1px solid #262626;
+  padding: 8px 12px;
+}
+.insta-post .comment-form input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+/* ===== לייק אדום כשהמשתמש לחץ ===== */
+.like-btn.liked {
+  color: #e1306c;   /* אדום אינסטגרם */
+}
+.post-user-link{display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none}
+.post-user-link:visited{color:#fff}
+.post-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover}
+/* ==== Search drawer (Instagram-like) ==== */
+
+.search-header{ display:flex; align-items:center; justify-content:space-between;
+  padding:16px; border-bottom:1px solid #262626; }
+.search-header h3{ margin:0; font-size:18px; font-weight:700; }
+.search-close{ background:none; border:none; color:#aaa; font-size:18px; cursor:pointer; }
+
+.search-box{ display:flex; align-items:center; gap:8px; padding:10px 14px; }
+.search-box i{ color:#aaa; }
+#searchInput{
+  flex:1; padding:10px 12px; border:1px solid #2c2c2c; border-radius:8px;
+  background:#1a1a1a; color:#fff; outline:none;
+}
+.clear-btn{ background:#222; border:1px solid #2c2c2c; color:#aaa; width:32px; height:32px;
+  border-radius:8px; cursor:pointer; display:none; }
+.clear-btn:hover{ background:#2a2a2a; }
+
+.search-tabs{ display:flex; gap:8px; padding:0 14px 10px; border-bottom:1px solid #262626; }
+.tab-btn{
+  flex:1; padding:8px 10px; background:#1a1a1a; color:#ddd; border:1px solid #2c2c2c;
+  border-radius:8px; cursor:pointer; font-weight:600;
+}
+.tab-btn.active{ background:#0a58ca; border-color:#0a58ca; color:#fff; }
+
+.results{ flex:1; overflow:auto; padding:8px 0; }
+.result-row{
+  display:flex; align-items:center; gap:12px; padding:10px 16px; cursor:pointer;
+}
+.result-row:hover{ background:#1a1a1a; }
+.result-avatar{
+  width:44px; height:44px; border-radius:50%; object-fit:cover; background:#222;
+}
+.result-meta{ display:flex; flex-direction:column; min-width:0; }
+.result-title{
+  color:#fff; font-weight:700; font-size:14px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.result-sub{
+  color:#aaa; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.results .empty{ color:#888; font-size:13px; padding:12px 16px; }
+/* Search drawer – left side like Instagram */
+#searchDrawer{
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 220px;           /* צמוד לימין של ה-sidebar שלך (רוחב 220px) */
+  right: auto;           /* מבטל עיגון לימין */
+  width: 360px;
+  background: #111;
+  border-right: 1px solid #262626;  /* קו מפריד משמאל */
+  border-left: none;
+  display: none;         /* נפתח בסקריפט */
+  flex-direction: column;
+  z-index: 1100;
+  box-shadow: 0 0 20px rgba(0,0,0,.35);
+}
+
+/* תוכן המגירה – רק שיהיה לך נוח לגלילה */
+#searchDrawer .drawer-body{
+  overflow-y: auto;
+}
+
+/* במסכים שבהם ה-sidebar נעלם/מצטמצם – תן למגירה להיצמד לשמאל המסך */
+@media (max-width: 1199px){
+  #searchDrawer{
+    left: 0;
+    width: 360px;        /* אפשר גם 100% אם תרצה מסך מלא */
+    border-right: 1px solid #262626;
+  }
+}
+
+/* בנייד – מסך מלא לנוחות */
+@media (max-width: 768px){
+  #searchDrawer{
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    border-right: none;
+  }
+}
+/* ===== Overlay של החיפוש ===== */
+#modalOverlay{
+  position: fixed !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 220px !important;      /* לא מכסה את ה-sidebar (רוחב 220px) */
+  right: 0 !important;
+  background: transparent !important;  /* בלי “חושך” */
+  z-index: 1050 !important;    /* מתחת למגירה, מעל התוכן */
+  display: none;               /* נפתח בסקריפט */
+}
+
+/* במסכים שה־sidebar נסתר – תן ל-overlay להתחיל משמאל */
+@media (max-width: 1199px){
+  #modalOverlay{ left: 0 !important; }
+}
+
+/* ===== מגירת החיפוש (שמאל, צמוד ל-sidebar) ===== */
+#searchDrawer{
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 220px;                 /* מיושר לסיידבר שלך */
+  right: auto;
+  width: 360px;
+  background: #111;
+  border-right: 1px solid #262626;  /* קו מפריד משמאל */
+  border-left: none;
+  display: none;               /* נפתח בסקריפט */
+  flex-direction: column;
+  z-index: 1100;               /* מעל ה-overlay */
+  box-shadow: 0 0 20px rgba(0,0,0,.35);
+}
+
+#searchDrawer .drawer-body{ overflow-y: auto; }
+
+@media (max-width: 1199px){
+  #searchDrawer{
+    left: 0;
+    width: 360px;
+    border-right: 1px solid #262626;
+  }
+}
+
+@media (max-width: 768px){
+  #searchDrawer{
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    border-right: none;
+  }
+}
+.suggestion-user {
   display: flex;
+  align-items: center;
+  margin-bottom: 12px;
   gap: 10px;
 }
 
-.group-post-card .comment-form input {
-  flex: 1;
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+.suggestion-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
-.group-post-card .comment-form button {
-  background-color: #3897f0;
-  color: white;
+.suggestion-username {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.suggestion-sub {
+  font-size: 12px;
+  color: #aaa;
+}
+
+.follow-btn {
+  margin-left: auto;
+  background: none;
   border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
+  color: #0af;
+  font-weight: bold;
   cursor: pointer;
+}
+.follow-btn.is-following {
+  background: transparent;
+  color: #9ba3af; /* אפור */
+  border: 1px solid #374151;
 }

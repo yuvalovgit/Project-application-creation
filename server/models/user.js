@@ -5,7 +5,7 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: true },
   email: { type: String },
   fullname: { type: String },
-  avatar: { type: String },
+avatar: { type: String, default: '/uploads/default-avatar.png' },
   bio: { type: String },
   location: { type: String },
   isAdmin: { type: Boolean, default: false },

@@ -1,15 +1,34 @@
 const postsGrid = document.getElementById('postsGrid');
 const backendURL = 'http://localhost:5000';
 
-// ===== Helper to fix media URL =====
-function fixImageUrl(url) {
+
+// ===== Helper to fix media URL (robust) =====
+function fixImageUrl(url, type = 'generic') {
   if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return backendURL + url;
+
+  // אם זה כבר URL מלא – תחזיר כמו שהוא
+  if (/^https?:\/\//i.test(url)) return url;
+
+  // אם מתחיל ב-/uploads – חבר לשרת
+  if (url.startsWith('/uploads')) return backendURL + url;
+
+  // אם מתחיל בלי סלש – תוסיף
+  if (url.startsWith('uploads')) return backendURL + '/' + url;
+
+  // ברירת מחדל לפי טיפוס
+  const folder =
+    type === 'avatar'     ? '/uploads/avatars/'  :
+    type === 'groupCover' ? '/uploads/covers/'   :
+                            '/uploads/posts/';
+
+  return backendURL + folder + url;
 }
 
 // ===== Load Feed =====
-window.addEventListener('DOMContentLoaded', loadFeed);
+window.addEventListener('DOMContentLoaded', () => {
+  loadFeed();
+  loadSuggestions();
+});
 
 async function loadFeed() {
   const token = localStorage.getItem('token');
@@ -34,45 +53,93 @@ async function loadFeed() {
 
     posts.forEach(post => {
       const postDiv = document.createElement('div');
-      postDiv.className = 'group-post-card'; // ✅ עיצוב אחיד לפוסטים
+      postDiv.className = 'insta-post'; // עיצוב אינסטגרם
 
       const media = post.image || post.video;
       let mediaTag = '';
       if (media) {
         if (media.endsWith('.mp4')) {
-          mediaTag = `<video src="${fixImageUrl(media)}" class="post-image" controls></video>`;
+          mediaTag = `<video src="${fixImageUrl(media)}" class="post-media" controls></video>`;
         } else {
-          mediaTag = `<img src="${fixImageUrl(media)}" alt="Post media" class="post-image" />`;
+          mediaTag = `<img src="${fixImageUrl(media)}" alt="Post media" class="post-media" />`;
         }
       }
 
-      const author = post.author || { _id: '', username: 'Unknown' };
-      const group = post.group || null;
+      const author = post.author || { _id: '', username: 'Unknown', profileImage: '/uploads/default-avatar.png' };
 
-      const sourceLabel = group
-        ? `<div class="post-source">Shared in <a href="create-post.html?groupId=${group._id}" style="color:#fa0;">${group.name || 'Group'}</a></div>`
-        : `<div class="post-source">Posted by <a href="profile.html?userId=${author._id}" style="color:#0af; text-decoration:underline;">${author.username}</a></div>`;
+      // ===== Header (נשמר בדיוק כמו אצלך) =====
+      const avatarSrc = fixImageUrl(
+  author.profileImage || author.avatar || author.image || '/uploads/default-avatar.png',
+  'avatar'
+);
 
-      const commentsHTML = post.comments?.map(comment => {
-        const commenter = comment.author || { _id: '', username: 'Unknown' };
-        return `
-          <div class="comment">
-            <b><a href="profile.html?userId=${commenter._id}" style="color:#0af;">${commenter.username}</a></b>: ${comment.text}
-          </div>`;
-      }).join('') || '';
+
+      const postHeader = `
+        <div class="post-header">
+          <a href="profile.html?userId=${author._id}" class="post-user-link">
+            <img
+              src="${avatarSrc}"
+              class="post-avatar"
+              alt=""
+              onerror="this.onerror=null; this.src='${fixImageUrl('/uploads/default-avatar.png')}';"
+            />
+            <span class="post-username">${author.username || 'Unknown'}</span>
+          </a>
+          <span class="post-time">${post.createdAt ? new Date(post.createdAt).toLocaleString() : ''}</span>
+          <i class="fas fa-ellipsis-h post-options"></i>
+        </div>
+      `;
+
+      // ===== Actions (אין paper-plane) =====
+      const actions = `
+        <div class="post-actions">
+          <i class="far fa-heart like-btn" data-postid="${post._id}" title="Like"></i>
+          <i class="far fa-comment comment-btn" title="Comment"></i>
+          <i class="far fa-bookmark save" title="Save"></i>
+        </div>
+      `;
+
+      // ===== Likes + Caption =====
+      const likesSection = `
+        <div class="post-likes">
+          <span class="like-count">${post.likes?.length || 0}</span> likes
+        </div>
+        <div class="post-caption">
+          ${post.content || ''}
+        </div>
+      `;
+
+      // ===== Comments =====
+      const commentsHTML = (post.comments || [])
+        .slice(-2)
+        .map(comment => {
+          const commenter = comment.author || { _id: '', username: 'Unknown' };
+          return `
+            <p><a href="profile.html?userId=${commenter._id}" class="comment-username">${commenter.username}</a> ${comment.text}</p>
+          `;
+        }).join('');
+
+      const commentsSection = `
+        <div class="post-comments">
+          ${post.comments?.length > 2 ? `<a href="#">View all ${post.comments.length} comments</a>` : ''}
+          ${commentsHTML}
+        </div>
+      `;
+
+      // ===== Add comment =====
+      const addComment = `
+        <form class="comment-form" data-postid="${post._id}">
+          <input type="text" name="comment" class="comment-input" placeholder="Add a comment..." required />
+        </form>
+      `;
 
       postDiv.innerHTML = `
-        ${sourceLabel}
-        <div class="post-media">${mediaTag}</div>
-        <div class="post-content">${post.content || ''}</div>
-        <button class="like-btn" data-postid="${post._id}">
-          ❤️ <span class="like-count">${post.likes.length}</span> likes
-        </button>
-        <div class="comments">${commentsHTML}</div>
-        <form class="comment-form" data-postid="${post._id}">
-          <input type="text" name="comment" placeholder="Add a comment..." required />
-          <button type="submit">Post</button>
-        </form>
+        ${postHeader}
+        ${mediaTag}
+        ${actions}
+        ${likesSection}
+        ${commentsSection}
+        ${addComment}
       `;
 
       postsGrid.appendChild(postDiv);
@@ -87,7 +154,29 @@ async function loadFeed() {
           headers: { Authorization: `Bearer ${token}` }
         });
         const updated = await res.json();
-        button.querySelector('.like-count').textContent = updated.likes.length;
+
+        // Toggle icon + color
+        button.classList.toggle('liked');
+        button.classList.contains('liked')
+          ? button.classList.replace('far', 'fas')  // מלא
+          : button.classList.replace('fas', 'far'); // ריק
+        button.style.color = button.classList.contains('liked') ? 'red' : '';
+
+        // Update like count
+        const likeCount = button.closest('.insta-post').querySelector('.like-count');
+        likeCount.textContent = updated.likes.length;
+      });
+    });
+
+    // ===== Comment icon -> focus & scroll to input =====
+    document.querySelectorAll('.comment-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const post = btn.closest('.insta-post');
+        const input = post.querySelector('.comment-input');
+        if (input) {
+          input.focus();
+          input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       });
     });
 
@@ -120,68 +209,236 @@ async function loadFeed() {
   }
 }
 
-// ====== Search Modal Functions ======
+/* ===================== Search Drawer (Instagram-like) ===================== */
+let searchMode = 'users'; // 'users' | 'groups'
+let searchDebounceTimer = null;
+let searchAbort = null;
 
 function openUserSearchModal() {
-  document.getElementById('modalOverlay').style.display = 'block';
-  document.getElementById('userSearchModal').style.display = 'block';
+  const overlay = document.getElementById('modalOverlay');
+  const drawer  = document.getElementById('searchDrawer');
+  if (!overlay || !drawer) return;
+
+  overlay.style.display = 'block';
+  drawer.style.display = 'flex';
+
+  setActiveTab('users');
+
+  const input = document.getElementById('searchInput');
+  if (input) {
+    input.value = '';
+    const clr = document.getElementById('searchClearBtn');
+    if (clr) clr.style.display = 'none';
+    renderResults([], 'Start typing to search…');
+    setTimeout(() => input.focus(), 0);
+  }
 }
 
 function closeUserSearchModal() {
-  document.getElementById('modalOverlay').style.display = 'none';
-  document.getElementById('userSearchModal').style.display = 'none';
-  document.getElementById('searchResults').innerHTML = '';
+  const overlay = document.getElementById('modalOverlay');
+  const drawer  = document.getElementById('searchDrawer');
+  if (overlay) overlay.style.display = 'none';
+  if (drawer)  drawer.style.display = 'none';
+  renderResults([]);
 }
 
-async function searchUsers() {
-  const username = document.getElementById('search-username').value.trim();
-  const token = localStorage.getItem('token');
-  const container = document.getElementById('searchResults');
-  container.innerHTML = '';
+function setActiveTab(type){
+  searchMode = type;
+  document.getElementById('tabUsers')?.classList.toggle('active', type==='users');
+  document.getElementById('tabGroups')?.classList.toggle('active', type==='groups');
+  const q = document.getElementById('searchInput')?.value.trim() || '';
+  if (q) doSearch(q, searchMode); else renderResults([], 'Search '+type+'…');
+}
+
+// tab clicks
+document.getElementById('tabUsers')?.addEventListener('click', () => setActiveTab('users'));
+document.getElementById('tabGroups')?.addEventListener('click', () => setActiveTab('groups'));
+
+// input & clear
+document.getElementById('searchInput')?.addEventListener('input', (e)=>{
+  const q = e.target.value;
+  const clr = document.getElementById('searchClearBtn');
+  if (clr) clr.style.display = q ? 'block' : 'none';
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(()=> doSearch(q.trim(), searchMode), 250);
+});
+document.getElementById('searchClearBtn')?.addEventListener('click', ()=>{
+  const input = document.getElementById('searchInput');
+  if (input) {
+    input.value = '';
+    document.getElementById('searchClearBtn').style.display = 'none';
+    input.focus();
+    renderResults([], 'Start typing to search…');
+  }
+});
+
+async function doSearch(query, mode){
+  if (!query){
+    renderResults([], 'Start typing to search…');
+    return;
+  }
+
+  // cancel previous
+  if (searchAbort) searchAbort.abort();
+  searchAbort = new AbortController();
+
+  renderResults([], 'Searching…');
 
   try {
-    // === חיפוש משתמשים ===
-    const userRes = await fetch(`${backendURL}/api/users/search?username=${username}`, {
+    const token = localStorage.getItem('token');
+    const url = mode === 'groups'
+      ? `${backendURL}/api/groups/search?name=${encodeURIComponent(query)}`
+      : `${backendURL}/api/users/search?username=${encodeURIComponent(query)}`;
+
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: searchAbort.signal });
+    if (!res.ok) throw new Error('Search failed');
+    const data = await res.json();
+    renderResults(Array.isArray(data) ? data : [], (data && data.length) ? '' : 'No results.');
+  } catch(e){
+    if (e.name === 'AbortError') return;
+    renderResults([], 'Error while searching.');
+    console.error(e);
+  }
+}
+function renderResults(items, emptyMsg){
+  const list = document.getElementById('searchResultsList');
+  if (!list) return;
+
+  if (!items || !items.length){
+    list.innerHTML = `<div class="empty">${emptyMsg || 'No results.'}</div>`;
+    return;
+  }
+
+  const rows = items.map(item => {
+    if (searchMode === 'groups'){
+      const cover = fixImageUrl(
+        item.cover || item.image || '/uploads/default-cover.jpg',
+        'groupCover'
+      );
+      const members = item.members?.length || 0;
+      const href = `create-post.html?groupId=${encodeURIComponent(item._id)}`;
+      return `
+        <a class="result-row" href="${href}">
+          <img class="result-avatar" src="${cover}" onerror="this.src='${fixImageUrl('/uploads/default-cover.jpg')}'" />
+          <div class="result-meta">
+            <div class="result-title">${escapeHtml(item.name || 'Group')}</div>
+            <div class="result-sub">${members} members</div>
+          </div>
+        </a>`;
+    } else {
+      const avatar = fixImageUrl(
+        item.profileImage || item.avatar || item.image || '/uploads/default-avatar.png',
+        'avatar'
+      );
+
+      // ✅ כאן תראה מה הגיע מהשרת ומה נבנה ל־URL
+      console.log("👤 avatar path:", item.avatar, "=>", avatar);
+
+      const href   = `profile.html?userId=${encodeURIComponent(item._id)}`;
+      return `
+        <a class="result-row" href="${href}">
+          <img class="result-avatar" src="${avatar}" onerror="this.src='${fixImageUrl('/uploads/default-avatar.png')}'" />
+          <div class="result-meta">
+            <div class="result-title">${escapeHtml(item.username || 'user')}</div>
+            <div class="result-sub">${escapeHtml(item.fullName || item.bio || '')}</div>
+          </div>
+        </a>`;
+    }
+  }).join('');
+
+  list.innerHTML = rows;
+}
+
+
+// small helper used above
+function escapeHtml(str=''){
+  return String(str)
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'",'&#39;');
+}
+async function loadSuggestions() {
+  const container = document.getElementById('suggestionsList');
+  if (!container) return;
+
+  try {
+    const token = localStorage.getItem('token');
+    const res = await fetch(`${backendURL}/api/users/suggestions/random`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    const users = await userRes.json();
+    if (!res.ok) throw new Error("Failed to fetch suggestions");
+    const users = await res.json();
 
-    container.innerHTML += `<h3>👤 Users</h3>`;
-    if (users.length) {
-      container.innerHTML += users.map(user => `
-        <div style="border-bottom: 1px solid #555; padding: 6px 0;">
-          <a href="profile.html?userId=${user._id}" style="color:#0af; text-decoration:underline;">
-            <strong>${user.username}</strong>
-          </a><br/>
-          Registered: ${new Date(user.createdAt).toLocaleDateString()}
-        </div>
-      `).join('');
-    } else {
-      container.innerHTML += '<p>No users found.</p>';
-    }
+    container.innerHTML = users.map(u => `
+      <div class="suggestion-user">
+        <a class="suggestion-info" href="profile.html?userId=${encodeURIComponent(u._id)}" style="display:flex;gap:10px;align-items:center;text-decoration:none;color:#fff;">
+          <img src="${fixImageUrl(u.avatar || '/uploads/default-avatar.png', 'avatar')}"
+               class="suggestion-avatar"
+               onerror="this.src='${fixImageUrl('/uploads/default-avatar.png')}'" />
+          <div style="min-width:0">
+            <div class="suggestion-username" style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${u.username}
+            </div>
+            <div class="suggestion-sub" style="color:#aaa;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${u.fullname || ''}
+            </div>
+          </div>
+        </a>
+        <button class="follow-btn" data-userid="${u._id}" aria-label="Follow ${u.username}">Follow</button>
+      </div>
+    `).join('');
 
-    // === חיפוש קבוצות ===
-    const groupRes = await fetch(`${backendURL}/api/groups/search?name=${username}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const groups = await groupRes.json();
-
-    container.innerHTML += `<h3 style="margin-top:1em;">👥 Groups</h3>`;
-    if (groups.length) {
-      container.innerHTML += groups.map(group => `
-        <div style="border-bottom: 1px solid #555; padding: 6px 0;">
-          <a href="create-post.html?groupId=${group._id}" style="color:#fa0; text-decoration:underline;">
-            <strong>${group.name}</strong>
-          </a><br/>
-          Members: ${group.members?.length || 0}
-        </div>
-      `).join('');
-    } else {
-      container.innerHTML += '<p>No groups found.</p>';
-    }
-
+    wireSuggestionButtons(); // ⬅️ מחברים מאזינים אחרי הרינדור
   } catch (err) {
-    console.error('Search failed:', err);
-    container.innerHTML = '<p style="color:red;">Error occurred while searching.</p>';
+    console.error("❌ Failed to load suggestions:", err);
+    container.innerHTML = `<p style="color:#888;">Failed to load suggestions</p>`;
+  }
+}
+
+// מחבר מאזינים לכל כפתורי Follow שנוצרו עכשיו
+function wireSuggestionButtons() {
+  document.querySelectorAll('.follow-btn').forEach(btn => {
+    btn.removeEventListener('click', onFollowClick); // הגנה מכפילויות
+    btn.addEventListener('click', onFollowClick);
+  });
+}
+
+async function onFollowClick(e) {
+  const btn = e.currentTarget;
+  const userId = btn.dataset.userid;
+  if (!userId) return;
+
+  btn.disabled = true;
+  const token = localStorage.getItem('token');
+
+  try {
+    const res = await fetch(`${backendURL}/api/users/${encodeURIComponent(userId)}/follow`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    // אם השרת מחזיר "Followed" / "Unfollowed" – נטפל בהתאם
+    if (res.ok) {
+      const followed = /followed/i.test(data.message || ''); // true אם Followed
+      // אפשרות א: להחליף טקסט ולשמור מצב
+      btn.textContent = followed ? 'Following' : 'Follow';
+      btn.classList.toggle('is-following', followed);
+
+      // אפשרות ב (חלופית): להסיר מההצעות אחרי Follow:
+      // if (followed) btn.closest('.suggestion-user')?.remove();
+    } else {
+      console.error('Follow API error:', data);
+      btn.textContent = 'Error';
+      setTimeout(() => { btn.textContent = 'Follow'; }, 1200);
+    }
+  } catch (err) {
+    console.error('Follow failed:', err);
+    btn.textContent = 'Error';
+    setTimeout(() => { btn.textContent = 'Follow'; }, 1200);
+  } finally {
+    btn.disabled = false;
   }
 }

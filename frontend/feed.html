@@ -21,20 +21,8 @@
             <i class="fas fa-magnifying-glass"></i> <span class="link-text">Search</span>
           </a>
         </li>
-        <li><a href="#"><i class="fas fa-compass"></i> <span class="link-text">Explore</span></a></li>
         <li><a href="creation-group.html"><i class="fas fa-users"></i> <span class="link-text">Groups</span></a></li>
-        <li><a href="#"><i class="fas fa-envelope"></i> <span class="link-text">Messages</span></a></li>
-        <li><a href="#"><i class="far fa-heart"></i> <span class="link-text">Notifications</span></a></li>
-
-<li>
-  <a href="create-post.html" class="sidebar-link">
-    <i class="far fa-square-plus"></i> <span class="link-text">Create</span>
-  </a>
-</li>
-
-
         <li><a href="profile.html"><i class="far fa-user"></i> <span class="link-text">Profile</span></a></li>
-        <li><a href="#"><i class="fas fa-bars"></i> <span class="link-text">More</span></a></li>
       </ul>
     </div>
 
@@ -45,21 +33,46 @@
         <div id="postsGrid" class="d-flex flex-column gap-4"></div>
       </div>
     </section>
+
+    <!-- Right Panel – Suggested Users -->
+    <aside class="right-panel">
+      <h4 style="margin-bottom:15px;">Suggested for you</h4>
+      <div id="suggestionsList"></div>
+    </aside>
   </div>
 
-  <!-- Search Users Modal -->
-  <div id="modalOverlay" onclick="closeUserSearchModal()" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:9998;"></div>
+  <!-- Overlay -->
+  <div id="modalOverlay" onclick="closeUserSearchModal()" style="display:none"></div>
 
-  <div id="userSearchModal" style="display:none; position:fixed; z-index:9999; left:50%; top:50%; transform:translate(-50%, -50%); background-color:#111; padding:20px; border:1px solid #444; border-radius:10px; width:300px; box-shadow:0 0 15px #000;">
-    <h3 style="margin-top:0;">Search Users</h3>
-    <input type="text" id="search-username" placeholder="Username" style="width:100%; padding:8px; margin-bottom:10px;" />
-    <input type="text" id="search-group" placeholder="Group Name" style="width:100%; padding:8px; margin-bottom:10px;" />
-    <input type="date" id="search-date" style="width:100%; padding:8px; margin-bottom:10px;" />
-    <button onclick="searchUsers()" style="width:100%; padding:8px; background-color:#0577c3; color:white;">Search</button>
-    <button onclick="closeUserSearchModal()" style="width:100%; padding:8px; background-color:#333; color:white; margin-top:5px;">Close</button>
-    <div id="searchResults" style="margin-top:15px; max-height:200px; overflow-y:auto;"></div>
+  <!-- Search Drawer -->
+  <div id="searchDrawer" class="search-drawer" style="display:none;">
+    <div class="search-header">
+      <h3>Search</h3>
+      <button class="search-close" onclick="closeUserSearchModal()" aria-label="Close">✕</button>
+    </div>
+
+    <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input id="searchInput" type="text" placeholder="Search users or groups…" autocomplete="off" />
+      <button id="searchClearBtn" class="clear-btn" aria-label="Clear" title="Clear">×</button>
+    </div>
+
+    <div class="search-tabs">
+      <button class="tab-btn active" data-type="users" id="tabUsers">Users</button>
+      <button class="tab-btn" data-type="groups" id="tabGroups">Groups</button>
+    </div>
+
+    <div id="searchResultsList" class="results"></div>
   </div>
 
   <script src="feed.js"></script>
+  <script>
+    // נטען את ההצעות ברגע שהדף מוכן
+    window.addEventListener('DOMContentLoaded', () => {
+      if (typeof loadSuggestions === 'function') {
+        loadSuggestions();
+      }
+    });
+  </script>
 </body>
 </html>
