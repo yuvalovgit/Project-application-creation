@@ -12,7 +12,8 @@ const {
   getUserPosts,
   getAllUsers,
   deleteMyAccount,
-  getSuggestedUsers   // ✅ הוספנו
+  getSuggestedUsers,
+  getFollowingStories   // ✅ חדש
 } = require('../controllers/userController');
 
 
@@ -22,7 +23,7 @@ router.get('/search', authMiddleware, async (req, res) => {
   const query = {};
 
   if (username) {
-    query.username = { $regex: username, $options: 'i' }; // חיפוש חלקי בלי תלות באותיות קטנות/גדולות
+    query.username = { $regex: username, $options: 'i' };
   }
 
   if (group) {
@@ -47,6 +48,8 @@ router.get('/search', authMiddleware, async (req, res) => {
 // 🆕 הצעות משתמשים רנדומליות (5)
 router.get('/suggestions/random', authMiddleware, getSuggestedUsers);
 
+// 🆕 סטוריז – רשימת המשתמשים שאני עוקב אחריהם
+router.get('/:userId/following/stories', authMiddleware, getFollowingStories);
 
 // 🆕 העלאת תמונת פרופיל (avatar)
 router.post('/:userId/avatar', authMiddleware, upload.single('avatar'), async (req, res) => {
@@ -71,8 +74,6 @@ router.put('/:userId', authMiddleware, upload.single('avatar'), updateUserProfil
 router.post('/:userId/follow', authMiddleware, followUser);
 router.get('/:userId/posts', authMiddleware, getUserPosts);
 router.get('/:userId', authMiddleware, getUserProfile); // ✅ אחרון כדי לא לבלוע ראוטים אחרים
-router.get('/suggestions/random', authMiddleware, getSuggestedUsers);
-
 
 // 🗑️ מחיקת החשבון העצמי
 router.delete('/me', authMiddleware, deleteMyAccount);

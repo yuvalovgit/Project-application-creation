@@ -155,13 +155,27 @@ async function getSuggestedUsers(req, res) {
     const suggestions = await User.aggregate([
       { $match: { _id: { $nin: excludeIds } } },
       { $sample: { size: 5 } },
-      { $project: { _id: 1, username: 1, fullname: 1, avatar: 1 } } // _id במפורש
+      { $project: { _id: 1, username: 1, fullname: 1, avatar: 1 } }
     ]);
 
     res.json(suggestions);
   } catch (err) {
     console.error('getSuggestedUsers error:', err);
     res.status(500).json({ error: 'Failed to load suggestions' });
+  }
+}
+
+/** ▪️ סטוריז – רשימת המשתמשים שאני עוקב אחריהם */
+async function getFollowingStories(req, res) {
+  try {
+    const user = await User.findById(req.params.userId)
+      .populate('following', 'username avatar');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json(user.following);
+  } catch (err) {
+    console.error('getFollowingStories error:', err);
+    res.status(500).json({ message: err.message });
   }
 }
 
@@ -173,5 +187,6 @@ module.exports = {
   getUserPosts,
   getUsersWithLocation,
   deleteMyAccount,
-  getSuggestedUsers
+  getSuggestedUsers,
+  getFollowingStories
 };
