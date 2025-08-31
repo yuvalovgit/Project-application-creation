@@ -46,6 +46,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Create-only mode (no group context)
     enterCreateOnlyMode();
   }
+
 });
 
 // =====================================================
@@ -65,14 +66,11 @@ function enterCreateOnlyMode() {
 // =====================================================
 let currentGroup = null;
 let isAdmin = false;
-
-
 async function loadGroupProfile() {
   try {
     const res = await fetch(`${backendURL}/api/groups/${groupId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-
 
     if (!res.ok) {
       const text = await res.text();
@@ -102,7 +100,7 @@ async function loadGroupProfile() {
     const adminInfoEl  = document.getElementById('adminInfo');
     const joinBtn      = document.getElementById('joinLeaveBtn');
     const editBtn      = document.getElementById('editGroupBtn');
-    const deleteBtn    = document.getElementById('deleteGroupBtn'); // הוסף ב‑HTML אם חסר
+    const deleteBtn    = document.getElementById('deleteGroupBtn');
 
     // --- מילוי UI בסיסי ---
     if (imgEl)   imgEl.src   = group.image ? fixImageUrl(group.image) : DEFAULT_AVATAR;
@@ -136,7 +134,6 @@ async function loadGroupProfile() {
         joinBtn.dataset.state = member ? 'leave' : 'join';
       };
       setJoinUi(isMember);
-
 
       joinBtn.onclick = async () => {
         try {
@@ -215,11 +212,127 @@ async function loadGroupProfile() {
     }
 
     // --- פוסטים של הקבוצה ---
-
     await loadGroupPosts();
+
+    // --- חברי הקבוצה (sidebar) ---
+    await loadGroupMembers();
+
   } catch (err) {
     console.error('loadGroupProfile error:', err);
     alert('Error loading group profile');
+  }
+}
+
+// ===== Members sidebar =====
+async function loadGroupMembers() {
+  try {
+    const res = await fetch(`${backendURL}/api/groups/${groupId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error("Failed to load members");
+    const group = await res.json();
+
+    // מושך גם את המשתמש הנוכחי עם following
+    const meRes = await fetch(`${backendURL}/api/users/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const me = await meRes.json();
+    const myFollowing = me.following ? me.following.map(f => String(f._id || f)) : [];
+
+    const container = document.getElementById('groupMembersList');
+    if (!container) return;
+
+    let members = Array.isArray(group.members) ? group.members.slice() : [];
+
+    // הופך את עצמי לראשון
+    const myId = String(userId);
+    members.sort((a, b) => {
+      const aId = String(a && a._id ? a._id : a);
+      const bId = String(b && b._id ? b._id : b);
+      if (aId === myId && bId !== myId) return -1;
+      if (bId === myId && aId !== myId) return 1;
+      const an = (a.username || '').toLowerCase();
+      const bn = (b.username || '').toLowerCase();
+      return an.localeCompare(bn);
+    });
+
+    if (!members.length) {
+      container.innerHTML = '<p style="color:#888;">No members yet</p>';
+      return;
+    }
+
+    const getAvatar = (u) => {
+      const raw = (u && (u.avatar || u.profileImage || u.image)) || '';
+      if (!raw) return DEFAULT_AVATAR;
+      if (/^https?:\/\//i.test(raw)) return raw;
+      if (raw.startsWith('/')) return backendURL + raw;
+      return fixImageUrl(raw, 'avatar');
+    };
+
+    container.innerHTML = members.map(m => {
+      const mId = String(m._id || m);
+      const isMe = mId === myId;
+      const avatar = getAvatar(m);
+      const href   = `profile.html?userId=${encodeURIComponent(mId)}`;
+
+      // בדיקה אם אני כבר עוקב אחרי המשתמש הזה
+      const isFollowing = myFollowing.includes(mId);
+
+      return `
+        <div class="member-row">
+          <a href="${href}">
+            <img src="${avatar}" alt="${escapeHtml(m.username || 'user')}" />
+          </a>
+          <a href="${href}" class="member-username">
+            ${escapeHtml(m.username || 'user')}${isMe ? ' <span class="member-me">(you)</span>' : ''}
+          </a>
+          ${isMe ? '' : `<button class="member-follow ${isFollowing ? 'is-following' : ''}" data-userid="${mId}">
+                          ${isFollowing ? 'Following' : 'Follow'}
+                        </button>`}
+        </div>
+      `;
+    }).join('');
+
+    // מאזינים ללחיצות Follow/Unfollow
+    container.querySelectorAll('.member-follow').forEach(btn => {
+      btn.addEventListener('click', () => followUser(btn));
+    });
+
+  } catch (err) {
+    console.error("❌ loadGroupMembers error:", err);
+  }
+}
+
+
+async function followUser(btn) {
+  const targetId = btn.dataset.userid;
+  if (!targetId) return;
+  if (String(targetId) === String(userId)) return; // לא עוקבים אחרי עצמך
+
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${backendURL}/api/users/${encodeURIComponent(targetId)}/follow`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      alert(data?.error || 'Failed to follow user');
+      return;
+    }
+
+    // data.followed === true => עכשיו אתה עוקב
+    const followed = !!data.followed;
+    btn.textContent = followed ? 'Following' : 'Follow';
+    btn.classList.toggle('is-following', followed);
+  } catch (err) {
+    console.error('Follow failed:', err);
+    alert('Server error');
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -312,8 +425,7 @@ async function loadGroupPosts() {
 
         <div class="post-actions">
           <i class="${likeIconClass} fa-heart" onclick="toggleLike('${postId}', this)"></i>
-          <i class="far fa-comment"></i>
-          <i class="far fa-bookmark"></i>
+          <i class="far fa-comment" onclick="focusComment('${postId}')"></i>
         </div>
 
         <div class="post-likes">
@@ -331,8 +443,11 @@ async function loadGroupPosts() {
         </div>
 
         <div class="post-add-comment">
-          <input type="text" placeholder="Add a comment..."
-            onkeypress="if(event.key === 'Enter') submitComment('${postId}', this)" />
+          <input type="text" 
+       placeholder="Add a comment..."
+       data-post="${postId}"
+       onkeypress="if(event.key === 'Enter') submitComment('${postId}', this)" />
+
         </div>
 
       `;
@@ -343,6 +458,10 @@ async function loadGroupPosts() {
     console.error('Error loading posts:', err);
     alert('Error loading posts');
   }
+}
+function focusComment(postId) {
+  const input = document.querySelector(`.post-add-comment input[data-post="${postId}"]`);
+  if (input) input.focus();
 }
 
 async function deleteGroupPost(postId) {
@@ -463,14 +582,18 @@ async function uploadImage(file, type) {
       body: form
     });
     const data = await res.json();
-    const imgEl = (type === 'profile') ? document.getElementById('groupImage')
-                                       : document.getElementById('groupCoverImage');
-    imgEl.src = fixImageUrl(data.url);
+    const imgEl = (type === 'profile') 
+      ? document.getElementById('groupImage')
+      : document.getElementById('groupCoverImage');
+
+    // ✅ מוסיפים טיימסטמפ לשבור cache
+    imgEl.src = fixImageUrl(data.url) + `?t=${Date.now()}`;
   } catch (err) {
     console.error(err);
     alert('Error uploading image');
   }
 }
+
 
 async function removeImage(type) {
   if (!groupId) return;
@@ -672,3 +795,161 @@ async function toggleLike(postId) {
     alert('Error toggling like');
   }
 }
+/* ===================== Search Drawer (Instagram-like) ===================== */
+/* Safe globals */
+window.backendURL = window.backendURL || 'http://localhost:5000';
+
+window.fixImageUrl = window.fixImageUrl || function(url, type = 'generic') {
+  if (!url) return '';
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith('/uploads')) return backendURL + url;
+  if (url.startsWith('uploads'))  return backendURL + '/' + url;
+  const folder =
+    type === 'avatar'     ? '/uploads/avatars/' :
+    type === 'groupCover' ? '/uploads/covers/'  :
+                             '/uploads/posts/';
+  return backendURL + folder + url;
+};
+
+window.avatarUrl = window.avatarUrl || function(raw) {
+  const DEFAULT_AVATAR_DATAURI =
+    'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><rect width="120" height="120" fill="%23222222"/><circle cx="60" cy="45" r="22" fill="%23999"/><rect x="25" y="76" width="70" height="24" rx="12" fill="%23999"/></svg>';
+  if (!raw || raw === 'null' || raw === 'undefined') return DEFAULT_AVATAR_DATAURI;
+  if (/^(data:|blob:|https?:\/\/)/i.test(raw)) return raw;
+  return fixImageUrl(raw, 'avatar');
+};
+
+window.escapeHtml = window.escapeHtml || function(str = '') {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
+let searchMode = 'users'; // 'users' | 'groups'
+let searchDebounceTimer = null;
+let searchAbort = null;
+
+window.openUserSearchModal = function openUserSearchModal() {
+  const overlay = document.getElementById('modalOverlay');
+  const drawer  = document.getElementById('searchDrawer');
+  if (!overlay || !drawer) return;
+  overlay.style.display = 'block';
+  drawer.style.display = 'flex';
+  setActiveTab('users');
+  const input = document.getElementById('searchInput');
+  if (input) {
+    input.value = '';
+    const clr = document.getElementById('searchClearBtn');
+    if (clr) clr.style.display = 'none';
+    renderResults([], 'Start typing to search…');
+    setTimeout(() => input.focus(), 0);
+  }
+};
+
+window.closeUserSearchModal = function closeUserSearchModal() {
+  const overlay = document.getElementById('modalOverlay');
+  const drawer  = document.getElementById('searchDrawer');
+  if (overlay) overlay.style.display = 'none';
+  if (drawer)  drawer.style.display = 'none';
+  renderResults([]);
+};
+
+function setActiveTab(type) {
+  searchMode = type;
+  document.getElementById('tabUsers')?.classList.toggle('active', type === 'users');
+  document.getElementById('tabGroups')?.classList.toggle('active', type === 'groups');
+  const q = document.getElementById('searchInput')?.value.trim() || '';
+  if (q) doSearch(q, searchMode); else renderResults([], 'Search ' + type + '…');
+}
+
+function wireSearchUI() {
+  document.getElementById('tabUsers')?.addEventListener('click', () => setActiveTab('users'));
+  document.getElementById('tabGroups')?.addEventListener('click', () => setActiveTab('groups'));
+
+  document.getElementById('searchInput')?.addEventListener('input', (e) => {
+    const q = e.target.value;
+    const clr = document.getElementById('searchClearBtn');
+    if (clr) clr.style.display = q ? 'block' : 'none';
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => doSearch(q.trim(), searchMode), 250);
+  });
+
+  document.getElementById('searchClearBtn')?.addEventListener('click', () => {
+    const input = document.getElementById('searchInput');
+    if (input) {
+      input.value = '';
+      document.getElementById('searchClearBtn').style.display = 'none';
+      input.focus();
+      renderResults([], 'Start typing to search…');
+    }
+  });
+}
+
+async function doSearch(query, mode) {
+  if (!query) {
+    renderResults([], 'Start typing to search…');
+    return;
+  }
+  if (searchAbort) searchAbort.abort();
+  searchAbort = new AbortController();
+  renderResults([], 'Searching…');
+
+  try {
+    const token = localStorage.getItem('token');
+    const url = mode === 'groups'
+      ? `${backendURL}/api/groups/search?name=${encodeURIComponent(query)}`
+      : `${backendURL}/api/users/search?username=${encodeURIComponent(query)}`;
+
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: searchAbort.signal });
+    if (!res.ok) throw new Error('Search failed');
+    const data = await res.json();
+    renderResults(Array.isArray(data) ? data : [], (data && data.length) ? '' : 'No results.');
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      console.error(e);
+      renderResults([], 'Error while searching.');
+    }
+  }
+}
+
+function renderResults(items, emptyMsg) {
+  const list = document.getElementById('searchResultsList');
+  if (!list) return;
+
+  if (!items || !items.length) {
+    list.innerHTML = `<div class="empty">${emptyMsg || 'No results.'}</div>`;
+    return;
+  }
+
+  const rows = items.map(item => {
+    if (searchMode === 'groups') {
+      const cover = fixImageUrl(item.cover || item.image || '/uploads/default-cover.jpg', 'groupCover');
+      const members = item.members?.length || 0;
+      const href = `create-post.html?groupId=${encodeURIComponent(item._id)}`;
+      return `
+        <a class="result-row" href="${href}">
+          <img class="result-avatar" src="${cover}" alt="${escapeHtml(item.name || 'Group')}" />
+          <div class="result-meta">
+            <div class="result-title">${escapeHtml(item.name || 'Group')}</div>
+            <div class="result-sub">${members} members</div>
+          </div>
+        </a>`;
+    } else {
+      const avatar = avatarUrl(item.profileImage || item.avatar || item.image);
+      const href   = `profile.html?userId=${encodeURIComponent(item._id)}`;
+      return `
+        <a class="result-row" href="${href}">
+          <img class="result-avatar" src="${avatar}" alt="${escapeHtml(item.username || 'user')}" />
+          <div class="result-meta">
+            <div class="result-title">${escapeHtml(item.username || 'user')}</div>
+            <div class="result-sub">${escapeHtml(item.fullName || item.bio || '')}</div>
+          </div>
+        </a>`;
+    }
+  }).join('');
+
+  list.innerHTML = rows;
+}
+
+window.addEventListener('DOMContentLoaded', wireSearchUI);

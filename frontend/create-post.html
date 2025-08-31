@@ -9,22 +9,18 @@
 </head>
 <body>
 
-  <!-- Sidebar -->
-  <div class="sidebar">    <ul>
+  <!-- Sidebar (exactly like feed) -->
+  <div class="sidebar">
+    <img src="images/login/instaLogo.png" alt="Instagram Logo" style="width:140px; margin-bottom:40px;" />
+    <ul>
       <li><a href="feed.html"><i class="fas fa-house"></i> <span class="link-text">Home</span></a></li>
-      <li><a href="#"><i class="fas fa-magnifying-glass"></i> <span class="link-text">Search</span></a></li>
-      <li><a href="#"><i class="fas fa-compass"></i> <span class="link-text">Explore</span></a></li>
-      <li><a href="creation-group.html"><i class="fas fa-users"></i> <span class="link-text">Groups</span></a></li>
-      <li><a href="#"><i class="fas fa-envelope"></i> <span class="link-text">Messages</span></a></li>
-      <li><a href="#"><i class="far fa-heart"></i> <span class="link-text">Notifications</span></a></li>
       <li>
-        <button id="uploadPostSidebarBtn" class="sidebar-link">
-          <i class="far fa-square-plus"></i> <span class="link-text">Create</span>
-        </button>
-        <input type="file" id="postImageUpload" accept="image/*,video/*" style="display: none;" />
+        <a href="#" onclick="openUserSearchModal()">
+          <i class="fas fa-magnifying-glass"></i> <span class="link-text">Search</span>
+        </a>
       </li>
+      <li><a href="creation-group.html"><i class="fas fa-users"></i> <span class="link-text">Groups</span></a></li>
       <li><a href="profile.html"><i class="far fa-user"></i> <span class="link-text">Profile</span></a></li>
-      <li><a href="#"><i class="fas fa-bars"></i> <span class="link-text">More</span></a></li>
     </ul>
   </div>
 
@@ -77,14 +73,19 @@
       <button id="submitPostBtn">Post</button>
     </div>
 
-  <!-- Group Feed -->
-<h3 class="section-title">Group Feed</h3>
-<div id="groupPostsFeed" class="post-feed">
-  <!-- Posts will load here -->
-</div>
-
+    <!-- Group Feed -->
+    <h3 class="section-title">Group Feed</h3>
+    <div id="groupPostsFeed" class="post-feed">
+      <!-- Posts will load here -->
+    </div>
 
   </div> <!-- End of main-content -->
+
+  <!-- 📌 Right Panel – Group Members -->
+  <aside class="right-panel">
+    <h4 style="margin-bottom:15px;">Members</h4>
+    <div id="groupMembersList" class="members-list"></div>
+  </aside>
 
   <!-- Hidden File Inputs -->
   <input type="file" id="profileFileInput" accept="image/*" style="display:none">
@@ -111,15 +112,37 @@
       <button id="saveGroupChangesBtn">Save Changes</button>
       <button onclick="closeEditModal()">Cancel</button>
       <button id="deleteGroupBtn" class="delete-btn" style="display:none;">
-  <i class="fas fa-trash"></i> Delete Group
-</button>
-
+        <i class="fas fa-trash"></i> Delete Group
+      </button>
     </div>
   </div>
   
 
+  <!-- Overlay -->
+  <div id="modalOverlay" onclick="closeUserSearchModal()" style="display:none"></div>
+
+  <!-- Search Drawer -->
+  <div id="searchDrawer" class="search-drawer" style="display:none;">
+    <div class="search-header">
+      <h3>Search</h3>
+      <button class="search-close" onclick="closeUserSearchModal()" aria-label="Close">✕</button>
+    </div>
+
+    <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input id="searchInput" type="text" placeholder="Search users or groups…" autocomplete="off" />
+      <button id="searchClearBtn" class="clear-btn" aria-label="Clear" title="Clear">×</button>
+    </div>
+
+    <div class="search-tabs">
+      <button class="tab-btn active" data-type="users" id="tabUsers">Users</button>
+      <button class="tab-btn" data-type="groups" id="tabGroups">Groups</button>
+    </div>
+
+    <div id="searchResultsList" class="results"></div>
+  </div>
+
   <!-- JS -->
   <script src="create-post.js"></script>
-  
 </body>
 </html>

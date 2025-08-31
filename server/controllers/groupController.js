@@ -3,10 +3,11 @@
 const Group = require('../models/Group');
 const Post  = require('../models/post');
 
-// יצירת קבוצה חדשה
+/* ===================== יצירת קבוצה ===================== */
 exports.createGroup = async (req, res) => {
   try {
     const { name, description, topic, isPrivate = false } = req.body;
+
     const existing = await Group.findOne({ name });
     if (existing) return res.status(400).json({ error: 'Group already exists' });
 
@@ -14,9 +15,9 @@ exports.createGroup = async (req, res) => {
       name,
       description,
       topic,
-      // 👇 שומרים לתיקייה groups
+      // נשמר לתיקייה /uploads/groups בהתאם ל-multer
       image: req.file ? `/uploads/groups/${req.file.filename}` : '',
-      cover: '',             // אפשר להרחיב ל-cover בזמן יצירה אם תרצה
+      cover: '',
       members: [req.user.id],
       admin: req.user.id,
       isPrivate,
@@ -31,7 +32,7 @@ exports.createGroup = async (req, res) => {
   }
 };
 
-// הצטרפות לקבוצה
+/* ===================== הצטרפות לקבוצה ===================== */
 exports.joinGroup = async (req, res) => {
   try {
     const { groupId } = req.body;
@@ -66,7 +67,7 @@ exports.joinGroup = async (req, res) => {
   }
 };
 
-// עזיבת קבוצה
+/* ===================== עזיבת קבוצה ===================== */
 exports.leaveGroup = async (req, res) => {
   try {
     const { groupId } = req.body;
@@ -90,11 +91,11 @@ exports.leaveGroup = async (req, res) => {
   }
 };
 
-// שליפת כל הקבוצות
+/* ===================== שליפת כל הקבוצות ===================== */
 exports.getGroups = async (req, res) => {
   try {
     const groups = await Group.find()
-      .select('name description topic image cover members')
+      .select('name description topic image cover members admin')
       .lean();
     console.log("📦 All groups fetched:", groups.length);
     res.json(groups);
@@ -104,12 +105,17 @@ exports.getGroups = async (req, res) => {
   }
 };
 
-// שליפת קבוצות של המשתמש
+/* ===================== הקבוצות שאני חבר בהן (לא אדמין) ===================== */
 exports.getMyGroups = async (req, res) => {
   try {
-    const groups = await Group.find({ members: req.user.id })
-      .select('name description topic image cover members')
-      .lean();
+    // חשוב: מסנן החוצה קבוצות שאתה האדמין שלהן כדי שלא יהיו כפילויות
+    const groups = await Group.find({
+      members: req.user.id,
+      admin: { $ne: req.user.id }
+    })
+    .select('name description topic image cover members admin')
+    .lean();
+
     res.json(groups);
   } catch (err) {
     console.error("Get my groups error:", err);
@@ -117,7 +123,20 @@ exports.getMyGroups = async (req, res) => {
   }
 };
 
-// שליפת קבוצה לפי מזהה
+/* ===================== הקבוצות שאני האדמין שלהן ===================== */
+exports.getAdminGroups = async (req, res) => {
+  try {
+    const groups = await Group.find({ admin: req.user.id })
+      .select('name description topic image cover members admin')
+      .lean();
+    res.json(groups);
+  } catch (err) {
+    console.error("Get admin groups error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/* ===================== שליפת קבוצה לפי מזהה ===================== */
 exports.getGroupById = async (req, res) => {
   try {
     const group = await Group.findById(req.params.id)
@@ -136,13 +155,13 @@ exports.getGroupById = async (req, res) => {
   }
 };
 
-// חיפוש קבוצות לפי שם
+/* ===================== חיפוש קבוצות לפי שם ===================== */
 exports.searchGroups = async (req, res) => {
   try {
     const name = req.query.name || '';
     const regex = new RegExp(name, 'i');
     const groups = await Group.find({ name: regex })
-      .select('name description topic image cover members')
+      .select('name description topic image cover members admin')
       .lean();
     res.json(groups);
   } catch (err) {
@@ -151,7 +170,7 @@ exports.searchGroups = async (req, res) => {
   }
 };
 
-// אישור בקשת הצטרפות
+/* ===================== אישור בקשת הצטרפות ===================== */
 exports.approveJoinRequest = async (req, res) => {
   try {
     const groupId = req.params.id;
@@ -184,7 +203,7 @@ exports.approveJoinRequest = async (req, res) => {
   }
 };
 
-// עדכון פרטי קבוצה
+/* ===================== עדכון פרטי קבוצה ===================== */
 exports.updateGroup = async (req, res) => {
   try {
     const groupId = req.params.id;
@@ -199,7 +218,6 @@ exports.updateGroup = async (req, res) => {
       if (req.body[key] !== undefined) group[key] = req.body[key];
     }
 
-    // תמונה חדשה?
     if (req.file) {
       group.image = `/uploads/groups/${req.file.filename}`;
     }
@@ -212,7 +230,7 @@ exports.updateGroup = async (req, res) => {
   }
 };
 
-// מחיקת פוסט מקבוצה
+/* ===================== מחיקת פוסט מקבוצה ===================== */
 exports.deleteGroupPost = async (req, res) => {
   try {
     const { id: groupId, postId } = req.params;
@@ -235,7 +253,7 @@ exports.deleteGroupPost = async (req, res) => {
   }
 };
 
-// קבלת כל הפוסטים של קבוצה
+/* ===================== קבלת כל הפוסטים של קבוצה ===================== */
 exports.getGroupPosts = async (req, res) => {
   try {
     const groupId = req.params.id;
@@ -250,13 +268,13 @@ exports.getGroupPosts = async (req, res) => {
   }
 };
 
-/* ======== Image upload/remove controllers ======== */
+/* ===================== העלאת/מחיקת תמונות ===================== */
 
-// העלאת תמונת פרופיל
+// העלאת תמונת פרופיל קבוצה
 exports.uploadProfileImage = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file received' });
-    const url = `/uploads/profiles/${req.file.filename}`;
+    const url = `/uploads/groups/${req.file.filename}`;
     const group = await Group.findByIdAndUpdate(req.params.id, { image: url }, { new: true });
     if (!group) return res.status(404).json({ error: 'Group not found' });
     res.json({ url });
@@ -266,10 +284,10 @@ exports.uploadProfileImage = async (req, res) => {
   }
 };
 
-// מחיקת תמונת פרופיל
+// מחיקת תמונת פרופיל קבוצה
 exports.removeProfileImage = async (req, res) => {
   try {
-    const defaultUrl = '/uploads/default-avatar.png';
+    const defaultUrl = '/uploads/default-group.png';
     const group = await Group.findByIdAndUpdate(req.params.id, { image: defaultUrl }, { new: true });
     if (!group) return res.status(404).json({ error: 'Group not found' });
     res.json({ url: defaultUrl });
@@ -306,6 +324,8 @@ exports.removeCoverImage = async (req, res) => {
   }
 };
 
+/* ===================== ניהול חברים ומחיקת קבוצה ===================== */
+
 // הסרת חבר מהקבוצה (admin only)
 exports.removeMember = async (req, res) => {
   try {
@@ -333,7 +353,7 @@ exports.removeMember = async (req, res) => {
   }
 };
 
-// מחיקת קבוצה
+// מחיקת קבוצה (admin only)
 exports.deleteGroup = async (req, res) => {
   try {
     const groupId = req.params.id;

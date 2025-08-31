@@ -1,3 +1,4 @@
+// server/routes/userRoutes.js
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
@@ -13,9 +14,8 @@ const {
   getAllUsers,
   deleteMyAccount,
   getSuggestedUsers,
-  getFollowingStories   // ✅ חדש
+  getFollowingStories
 } = require('../controllers/userController');
-
 
 // 🔍 חיפוש משתמשים לפי פרמטרים
 router.get('/search', authMiddleware, async (req, res) => {
@@ -44,7 +44,6 @@ router.get('/search', authMiddleware, async (req, res) => {
   }
 });
 
-
 // 🆕 הצעות משתמשים רנדומליות (5)
 router.get('/suggestions/random', authMiddleware, getSuggestedUsers);
 
@@ -67,13 +66,18 @@ router.post('/:userId/avatar', authMiddleware, upload.single('avatar'), async (r
   }
 });
 
-
 // --- CRUD למשתמשים ---
 router.get('/', authMiddleware, getAllUsers);
 router.put('/:userId', authMiddleware, upload.single('avatar'), updateUserProfile);
+
+// ✅ Follow / Unfollow
 router.post('/:userId/follow', authMiddleware, followUser);
+
+// 📩 פוסטים של משתמש
 router.get('/:userId/posts', authMiddleware, getUserPosts);
-router.get('/:userId', authMiddleware, getUserProfile); // ✅ אחרון כדי לא לבלוע ראוטים אחרים
+
+// 📄 פרופיל משתמש (שמים בסוף כדי לא לבלוע ראוטים אחרים)
+router.get('/:userId', authMiddleware, getUserProfile);
 
 // 🗑️ מחיקת החשבון העצמי
 router.delete('/me', authMiddleware, deleteMyAccount);

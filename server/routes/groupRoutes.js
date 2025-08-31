@@ -10,6 +10,7 @@ const {
   joinGroup,
   getGroups,
   getMyGroups,
+  getAdminGroups,   // ✅ חדש: קבוצות שאני האדמין שלהן
   leaveGroup,
   getGroupById,
   searchGroups,
@@ -25,16 +26,22 @@ const {
   deleteGroup
 } = require('../controllers/groupController');
 
+/* --------- Non-parameterized routes (must appear before "/:id") --------- */
+
 // 🔍 Search groups
 router.get('/search', authMiddleware, searchGroups);
 
-// 📂 Get my groups
+// 👑 Groups I created (I'm the admin)
+router.get('/admin', authMiddleware, getAdminGroups);
+
+// 📂 Groups I joined (but not admin) — aliases: /my and /mine
+router.get('/my',   authMiddleware, getMyGroups);
 router.get('/mine', authMiddleware, getMyGroups);
 
 // 📋 Get all groups
 router.get('/', authMiddleware, getGroups);
 
-// ➕ Create group  (שדה קובץ: 'groupImage')
+// ➕ Create group  (file field: 'groupImage')
 router.post(
   '/create',
   authMiddleware,
@@ -42,19 +49,19 @@ router.post(
   createGroup
 );
 
-// ✅ Join group
-router.post('/join', authMiddleware, joinGroup);
-
-// ❌ Leave group
+// ✅ Join / ❌ Leave
+router.post('/join',  authMiddleware, joinGroup);
 router.post('/leave', authMiddleware, leaveGroup);
+
+/* -------------------------- Parameterized routes -------------------------- */
 
 // 📄 Get group by ID
 router.get('/:id', authMiddleware, getGroupById);
 
-// 📥 Get all posts in the group
+// 📨 Get all posts of a group
 router.get('/:id/posts', authMiddleware, getGroupPosts);
 
-// 🛠️ Update group details (admin only)  (שדה קובץ: 'groupImage')
+// 🛠️ Update group (admin only) (file field: 'groupImage')
 router.patch(
   '/:id',
   authMiddleware,
@@ -74,8 +81,8 @@ router.delete('/:id', authMiddleware, deleteGroup);
 // 👤 Remove member (admin only)
 router.patch('/:id/remove-member', authMiddleware, removeMember);
 
-/* === Image upload/remove endpoints ===
-   שים לב: עכשיו אנחנו עקביים עם multerConfig:
+/* -------------------------- Image upload/remove --------------------------- */
+/* Note: consistent with multerConfig:
    'groupImage' → /uploads/groups
    'groupCover' → /uploads/covers
 */

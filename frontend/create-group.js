@@ -411,4 +411,77 @@ function renderResults(items, emptyMsg){
   }).join('');
 
   list.innerHTML = rows;
+}/* ===================== My Groups Modal ===================== */
+const myGroupsModal = document.getElementById('myGroupsModal');
+const openMyGroupsBtn = document.getElementById('openMyGroupsBtn');
+const closeMyGroupsBtn = document.getElementById('closeMyGroupsBtn');
+const adminGroupsList = document.getElementById('adminGroupsList');
+const joinedGroupsList = document.getElementById('joinedGroupsList');
+
+// פתח את המודל
+openMyGroupsBtn?.addEventListener('click', async () => {
+  if (!mustBeLoggedIn()) return;
+  myGroupsModal.style.display = 'block';
+  await loadMyGroups();
+});
+
+// סגור את המודל
+closeMyGroupsBtn?.addEventListener('click', () => {
+  myGroupsModal.style.display = 'none';
+});
+window.addEventListener('click', (e) => {
+  if (e.target === myGroupsModal) myGroupsModal.style.display = 'none';
+});
+// שליפת הקבוצות של המשתמש
+async function loadMyGroups() {
+  try {
+    // 🔹 קריאה לקבוצות שאני אדמין
+    const adminRes = await fetch(`${backendURL}/api/groups/admin`, { headers: authHeaders() });
+    const { ok: okAdmin, data: dataAdmin } = await safeJson(adminRes);
+
+    if (!okAdmin) {
+      adminGroupsList.innerHTML = `<p style="color:#999;">Failed to load admin groups</p>`;
+    } else {
+      const adminGroups = Array.isArray(dataAdmin) ? dataAdmin : [];
+      adminGroupsList.innerHTML = adminGroups.length
+        ? adminGroups.map(renderGroupItem).join('')
+        : `<p style="color:#999;">You haven’t created any groups yet</p>`;
+    }
+
+    // 🔹 קריאה לקבוצות שאני חבר בהן (אבל לא אדמין)
+    const joinedRes = await fetch(`${backendURL}/api/groups/mine`, { headers: authHeaders() });
+    const { ok: okJoined, data: dataJoined } = await safeJson(joinedRes);
+
+    if (!okJoined) {
+      joinedGroupsList.innerHTML = `<p style="color:#999;">Failed to load joined groups</p>`;
+    } else {
+      const joinedGroups = Array.isArray(dataJoined) ? dataJoined : [];
+
+      // ✅ סינון החוצה קבוצות שאני האדמין שלהן
+      const filteredJoined = joinedGroups.filter(g => String(g.admin) !== String(userId));
+
+      joinedGroupsList.innerHTML = filteredJoined.length
+        ? filteredJoined.map(renderGroupItem).join('')
+        : `<p style="color:#999;">You haven’t joined any groups yet</p>`;
+    }
+  } catch (err) {
+    console.error('❌ loadMyGroups error:', err);
+    adminGroupsList.innerHTML = `<p style="color:#999;">Error loading groups</p>`;
+    joinedGroupsList.innerHTML = `<p style="color:#999;">Error loading groups</p>`;
+  }
+}
+
+// פונקציית עזר ליצירת HTML של קבוצה
+function renderGroupItem(g) {
+  const href = `create-post.html?groupId=${encodeURIComponent(g._id)}`;
+  return `
+    <div class="my-group-item">
+      <img src="${groupCover(g)}" alt="${escapeHtml(g.name)}" class="my-group-cover"/>
+      <div class="my-group-info">
+        <div class="my-group-name">${escapeHtml(g.name)}</div>
+        <div class="my-group-topic">#${escapeHtml(g.topic || 'general')}</div>
+      </div>
+      <a href="${href}" class="btn small">Open</a>
+    </div>
+  `;
 }

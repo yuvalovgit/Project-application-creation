@@ -37,6 +37,12 @@
       </div>
 
       <div class="ph-right">
+        <!-- 🆕 כפתור My Groups -->
+        <button id="openMyGroupsBtn" class="mygroups-btn">
+          <i class="fas fa-layer-group"></i> My Groups
+        </button>
+
+        <!-- כפתור יצירת קבוצה -->
         <button id="openModalBtn" class="create-btn header-create">
           <i class="fas fa-plus"></i> Create Group
         </button>
@@ -66,6 +72,26 @@
           <input type="file" id="group-image" accept="image/*" />
           <button type="submit">Create Group</button>
         </form>
+      </div>
+    </div>
+
+    <!-- 🆕 Modal: My Groups -->
+    <div id="myGroupsModal" class="modal">
+      <div class="modal-content">
+        <span id="closeMyGroupsBtn" class="close">&times;</span>
+        <h2>My Groups</h2>
+
+        <!-- קבוצות שאני אדמין בהן -->
+        <h3 style="margin-top:15px; color:#0af;">Groups I Created</h3>
+        <div id="adminGroupsList" class="groups-sublist">
+          <!-- כאן ייטענו הקבוצות שאני האדמין שלהן -->
+        </div>
+
+        <!-- קבוצות שאני חבר בהן -->
+        <h3 style="margin-top:20px; color:#0af;">Groups I Joined</h3>
+        <div id="joinedGroupsList" class="groups-sublist">
+          <!-- כאן ייטענו הקבוצות שאני רק חבר בהן -->
+        </div>
       </div>
     </div>
 

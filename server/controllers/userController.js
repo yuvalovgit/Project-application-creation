@@ -77,12 +77,20 @@ async function followUser(req, res) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const isFollowing = currentUser.following.includes(userIdToFollow);
+    const isFollowing = currentUser.following.some(
+      id => id.toString() === userIdToFollow
+    );
 
     if (isFollowing) {
-      currentUser.following.pull(userIdToFollow);
-      userToFollow.followers.pull(currentUserId);
+      // ❌ Unfollow
+      currentUser.following = currentUser.following.filter(
+        id => id.toString() !== userIdToFollow
+      );
+      userToFollow.followers = userToFollow.followers.filter(
+        id => id.toString() !== currentUserId
+      );
     } else {
+      // ✅ Follow
       currentUser.following.push(userIdToFollow);
       userToFollow.followers.push(currentUserId);
     }

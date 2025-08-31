@@ -717,3 +717,104 @@ button:hover {
   from { opacity: 0; transform: translateY(-20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+/* ===== My Groups Modal Styling ===== */
+#myGroupsModal .modal-content {
+  background: #111;
+  color: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+#myGroupsList {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.my-group-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 10px;
+  padding: 10px 12px;
+  transition: background 0.2s ease;
+}
+
+.my-group-item:hover {
+  background: #222;
+}
+
+.my-group-cover {
+  width: 55px;
+  height: 55px;
+  border-radius: 8px;
+  object-fit: cover;
+  margin-right: 12px;
+}
+
+.my-group-info {
+  flex-grow: 1;
+}
+
+.my-group-name {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 3px;
+}
+
+.my-group-topic {
+  font-size: 13px;
+  color: #888;
+}
+
+.my-group-item .btn.small {
+  background: #0095f6;
+  color: #fff;
+  font-size: 13px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.my-group-item .btn.small:hover {
+  background: #0077cc;
+}
+/* כפתור Join (כחול) */
+.btn.join-btn {
+  background-color: #0095f6;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn.join-btn:hover {
+  background-color: #007bd1;
+}
+
+/* כפתור Leave (אדום) */
+.btn.leave-btn {
+  background-color: #ed4956;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn.leave-btn:hover {
+  background-color: #c82333;
+}
