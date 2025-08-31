@@ -5,8 +5,6 @@ const router  = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
 const upload         = require('../middleware/multerConfig');
 
-// const validateObjectId = require('../middleware/validateObjectId'); // אם יש לך
-
 const {
   createGroup,
   joinGroup,
@@ -36,11 +34,11 @@ router.get('/mine', authMiddleware, getMyGroups);
 // 📋 Get all groups
 router.get('/', authMiddleware, getGroups);
 
-// ➕ Create group  (שדה קובץ: 'image')
+// ➕ Create group  (שדה קובץ: 'groupImage')
 router.post(
   '/create',
   authMiddleware,
-  upload.single('image'),
+  upload.single('groupImage'),
   createGroup
 );
 
@@ -51,71 +49,53 @@ router.post('/join', authMiddleware, joinGroup);
 router.post('/leave', authMiddleware, leaveGroup);
 
 // 📄 Get group by ID
-// router.get('/:id', authMiddleware, validateObjectId('id'), getGroupById);
 router.get('/:id', authMiddleware, getGroupById);
 
 // 📥 Get all posts in the group
-// router.get('/:id/posts', authMiddleware, validateObjectId('id'), getGroupPosts);
 router.get('/:id/posts', authMiddleware, getGroupPosts);
 
-// 🛠️ Update group details (admin only)  (שדה קובץ: 'image')
+// 🛠️ Update group details (admin only)  (שדה קובץ: 'groupImage')
 router.patch(
   '/:id',
   authMiddleware,
-  // validateObjectId('id'),
-  upload.single('image'),
+  upload.single('groupImage'),
   updateGroup
 );
 
 // ✅ Approve join request (admin only)
-// router.post('/:id/approve', authMiddleware, validateObjectId('id'), approveJoinRequest);
 router.post('/:id/approve', authMiddleware, approveJoinRequest);
 
 // 🗑️ Delete a post in group (admin or author)
-// router.delete('/:id/posts/:postId', authMiddleware, validateObjectId('id'), validateObjectId('postId'), deleteGroupPost);
 router.delete('/:id/posts/:postId', authMiddleware, deleteGroupPost);
 
 // 🗑️ Delete group (admin only)
-// router.delete('/:id', authMiddleware, validateObjectId('id'), deleteGroup);
 router.delete('/:id', authMiddleware, deleteGroup);
 
 // 👤 Remove member (admin only)
-// router.patch('/:id/remove-member', authMiddleware, validateObjectId('id'), removeMember);
 router.patch('/:id/remove-member', authMiddleware, removeMember);
 
 /* === Image upload/remove endpoints ===
-   שים לב: משתמשים בשמות השדות 'image' לתמונת פרופיל קבוצה
-   ו-'cover' לתמונת קאבר, כדי להיות עקביים.
+   שים לב: עכשיו אנחנו עקביים עם multerConfig:
+   'groupImage' → /uploads/groups
+   'groupCover' → /uploads/covers
 */
 
-// Profile image (field: 'image')
+// Profile image (field: 'groupImage')
 router.post(
   '/:id/profile-upload',
   authMiddleware,
-  // validateObjectId('id'),
-  upload.single('image'),
+  upload.single('groupImage'),
   uploadProfileImage
 );
-router.delete(
-  '/:id/profile-remove',
-  authMiddleware,
-  // validateObjectId('id'),
-  removeProfileImage
-);
+router.delete('/:id/profile-remove', authMiddleware, removeProfileImage);
 
-// Cover image (field: 'cover')
+// Cover image (field: 'groupCover')
 router.post(
   '/:id/cover-upload',
   authMiddleware,
-  // validateObjectId('id'),
-  upload.single('cover'),
+  upload.single('groupCover'),
   uploadCoverImage
 );
-router.delete(
-  '/:id/cover-remove',
-  authMiddleware,
-  // validateObjectId('id'),
-  removeCoverImage
-);
+router.delete('/:id/cover-remove', authMiddleware, removeCoverImage);
 
 module.exports = router;

@@ -4,7 +4,9 @@ const GroupSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true, trim: true },
   description: { type: String, default: '' },
   topic: { type: String, default: 'general' },
-  image: { type: String, default: '/uploads/default-avatar.png' },
+
+  // 👇 ברירת מחדל יותר מתאימה לקבוצה
+  image: { type: String, default: '/uploads/default-group.png' },
   cover: { type: String, default: '/uploads/default-cover.jpg' },
 
   members: [{
@@ -13,7 +15,6 @@ const GroupSchema = new mongoose.Schema({
     default: []
   }],
 
-  // admin is optional now
   admin: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -28,5 +29,4 @@ const GroupSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
-// 👇 This line avoids the OverwriteModelError
 module.exports = mongoose.models.Group || mongoose.model('Group', GroupSchema);
