@@ -29,7 +29,10 @@
     <!-- Feed Section -->
     <section class="feed-section">
       <div class="container mt-4">
-        <h2 class="mb-4">Your Feed</h2>
+        <!-- 🆕 Stories Bar -->
+        <div id="storiesBar" class="stories-container mb-4"></div>
+
+        <!-- פוסטים -->
         <div id="postsGrid" class="d-flex flex-column gap-4"></div>
       </div>
     </section>
@@ -67,10 +70,13 @@
 
   <script src="feed.js"></script>
   <script>
-    // נטען את ההצעות ברגע שהדף מוכן
+    // נטען את ההצעות והסטוריז ברגע שהדף מוכן
     window.addEventListener('DOMContentLoaded', () => {
       if (typeof loadSuggestions === 'function') {
         loadSuggestions();
+      }
+      if (typeof loadStories === 'function') {
+        loadStories();
       }
     });
   </script>

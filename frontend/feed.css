@@ -107,40 +107,6 @@ body {
   max-width: 600px;
 }
 
-/*==================== STORIES ====================*/
-.stories, .stories-bar {
-  display: flex;
-  gap: 15px;
-  padding: 15px 0;
-  border-radius: 10px;
-  background-color: #000;
-  overflow-x: auto;
-}
-.story {
-  text-align: center;
-  flex: 0 0 auto;
-}
-.story-border {
-  background: linear-gradient(45deg, #f09433, #e69f3c, #dc2743, #cc2394, #e83cff);
-  padding: 2px;
-  border-radius: 50%;
-  display: inline-block;
-}
-.story-border img, .story img {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: block;
-  border: 2px solid #000;
-}
-.story-name, .story p {
-  margin-top: 14px;
-  font-size: 14px;
-  color: #fff;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 /*==================== POSTS (ישן - אפשר למחוק אם לא צריך) ====================*/
 .post, .card {
@@ -614,3 +580,57 @@ body {
   color: #9ba3af; /* אפור */
   border: 1px solid #374151;
 }
+/* ==================== STORIES BAR ==================== */
+.stories-container {
+  display: flex;
+  gap: 15px;
+  padding: 15px 10px;
+  overflow-x: auto;
+  border-bottom: 1px solid #262626;
+  scrollbar-width: none; /* Firefox */
+  margin-bottom: 25px;   /* 🆕 מוסיף רווח לפני הפוסטים */
+}
+
+.stories-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
+.story-circle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.story-circle img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid #e1306c; /* צבע מסגרת */
+  object-fit: cover;
+}
+
+.story-circle span {
+  font-size: 12px;
+  margin-top: 5px;
+  color: #fff;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+/* שים את הסטוריז ואת הפיד בעמודה האמצעית של ה-grid */
+.feed-section .container > #storiesBar,
+.feed-section .container > #postsGrid {
+  grid-column: 2 / 3; /* העמודה האמצעית */
+}
+
+/* לוודא שהם תופסים את כל רוחב העמודה */
+#storiesBar, #postsGrid {
+  width: 100%;
+}
+
+/* רווח ברור בין הסטוריז לפוסטים (כבר הוספת, רק להשלים פה למקרה) */
+.stories-container { margin-bottom: 25px; }

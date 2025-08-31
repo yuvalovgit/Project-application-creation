@@ -1,35 +1,50 @@
-const postsGrid = document.getElementById('postsGrid');
+// ===== DOM refs & config =====
+const postsGrid  = document.getElementById('postsGrid');
+const storiesBar = document.getElementById('storiesBar');
 const backendURL = 'http://localhost:5000';
 
+// ===== Avatar fallback with data URI (no network errors) =====
+const DEFAULT_AVATAR_DATAURI =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><rect width="120" height="120" fill="%23222222"/><circle cx="60" cy="45" r="22" fill="%23999"/><rect x="25" y="76" width="70" height="24" rx="12" fill="%23999"/></svg>';
+
+function avatarUrl(raw) {
+  if (!raw || raw === 'null' || raw === 'undefined') return DEFAULT_AVATAR_DATAURI;
+  if (/^(data:|blob:|https?:\/\/)/i.test(raw)) return raw;
+  return fixImageUrl(raw, 'avatar');
+}
 
 // ===== Helper to fix media URL (robust) =====
 function fixImageUrl(url, type = 'generic') {
   if (!url) return '';
-
-  // אם זה כבר URL מלא – תחזיר כמו שהוא
   if (/^https?:\/\//i.test(url)) return url;
-
-  // אם מתחיל ב-/uploads – חבר לשרת
   if (url.startsWith('/uploads')) return backendURL + url;
+  if (url.startsWith('uploads'))  return backendURL + '/' + url;
 
-  // אם מתחיל בלי סלש – תוסיף
-  if (url.startsWith('uploads')) return backendURL + '/' + url;
-
-  // ברירת מחדל לפי טיפוס
   const folder =
-    type === 'avatar'     ? '/uploads/avatars/'  :
-    type === 'groupCover' ? '/uploads/covers/'   :
-                            '/uploads/posts/';
-
+    type === 'avatar'     ? '/uploads/avatars/' :
+    type === 'groupCover' ? '/uploads/covers/'  :
+                             '/uploads/posts/';
   return backendURL + folder + url;
 }
 
-// ===== Load Feed =====
+// Escape HTML
+function escapeHtml(str = '') {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ===== Initial load =====
 window.addEventListener('DOMContentLoaded', () => {
   loadFeed();
   loadSuggestions();
+  loadStories();
 });
 
+// ===== Feed =====
 async function loadFeed() {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -42,7 +57,6 @@ async function loadFeed() {
     const res = await fetch(`${backendURL}/api/posts/feed`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-
     if (!res.ok) {
       alert('Failed to load feed');
       return;
@@ -53,44 +67,36 @@ async function loadFeed() {
 
     posts.forEach(post => {
       const postDiv = document.createElement('div');
-      postDiv.className = 'insta-post'; // עיצוב אינסטגרם
+      postDiv.className = 'insta-post';
 
+      // media
       const media = post.image || post.video;
       let mediaTag = '';
       if (media) {
-        if (media.endsWith('.mp4')) {
+        if (/\.(mp4|webm|ogg)$/i.test(media)) {
           mediaTag = `<video src="${fixImageUrl(media)}" class="post-media" controls></video>`;
         } else {
           mediaTag = `<img src="${fixImageUrl(media)}" alt="Post media" class="post-media" />`;
         }
       }
 
-      const author = post.author || { _id: '', username: 'Unknown', profileImage: '/uploads/default-avatar.png' };
+      // author
+      const author = post.author || { _id: '', username: 'Unknown', profileImage: null };
+      const avatarSrc = avatarUrl(author.profileImage || author.avatar || author.image);
 
-      // ===== Header (נשמר בדיוק כמו אצלך) =====
-      const avatarSrc = fixImageUrl(
-  author.profileImage || author.avatar || author.image || '/uploads/default-avatar.png',
-  'avatar'
-);
-
-
+      // header
       const postHeader = `
         <div class="post-header">
           <a href="profile.html?userId=${author._id}" class="post-user-link">
-            <img
-              src="${avatarSrc}"
-              class="post-avatar"
-              alt=""
-              onerror="this.onerror=null; this.src='${fixImageUrl('/uploads/default-avatar.png')}';"
-            />
-            <span class="post-username">${author.username || 'Unknown'}</span>
+            <img src="${avatarSrc}" class="post-avatar" alt="${escapeHtml(author.username || 'User')}" />
+            <span class="post-username">${escapeHtml(author.username || 'Unknown')}</span>
           </a>
           <span class="post-time">${post.createdAt ? new Date(post.createdAt).toLocaleString() : ''}</span>
           <i class="fas fa-ellipsis-h post-options"></i>
         </div>
       `;
 
-      // ===== Actions (אין paper-plane) =====
+      // actions
       const actions = `
         <div class="post-actions">
           <i class="far fa-heart like-btn" data-postid="${post._id}" title="Like"></i>
@@ -99,25 +105,21 @@ async function loadFeed() {
         </div>
       `;
 
-      // ===== Likes + Caption =====
+      // likes + caption
       const likesSection = `
         <div class="post-likes">
           <span class="like-count">${post.likes?.length || 0}</span> likes
         </div>
         <div class="post-caption">
-          ${post.content || ''}
+          ${escapeHtml(post.content || '')}
         </div>
       `;
 
-      // ===== Comments =====
-      const commentsHTML = (post.comments || [])
-        .slice(-2)
-        .map(comment => {
-          const commenter = comment.author || { _id: '', username: 'Unknown' };
-          return `
-            <p><a href="profile.html?userId=${commenter._id}" class="comment-username">${commenter.username}</a> ${comment.text}</p>
-          `;
-        }).join('');
+      // comments (last 2)
+      const commentsHTML = (post.comments || []).slice(-2).map(c => {
+        const cmAuthor = c.author || { _id: '', username: 'Unknown' };
+        return `<p><a href="profile.html?userId=${cmAuthor._id}" class="comment-username">${escapeHtml(cmAuthor.username)}</a> ${escapeHtml(c.text)}</p>`;
+      }).join('');
 
       const commentsSection = `
         <div class="post-comments">
@@ -126,7 +128,7 @@ async function loadFeed() {
         </div>
       `;
 
-      // ===== Add comment =====
+      // add comment
       const addComment = `
         <form class="comment-form" data-postid="${post._id}">
           <input type="text" name="comment" class="comment-input" placeholder="Add a comment..." required />
@@ -141,34 +143,31 @@ async function loadFeed() {
         ${commentsSection}
         ${addComment}
       `;
-
       postsGrid.appendChild(postDiv);
     });
 
-    // ===== Like Button Listener =====
+    // like handler
     document.querySelectorAll('.like-btn').forEach(button => {
       button.addEventListener('click', async () => {
         const postId = button.getAttribute('data-postid');
         const res = await fetch(`${backendURL}/api/posts/${postId}/like`, {
           method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
         });
         const updated = await res.json();
 
-        // Toggle icon + color
         button.classList.toggle('liked');
         button.classList.contains('liked')
-          ? button.classList.replace('far', 'fas')  // מלא
-          : button.classList.replace('fas', 'far'); // ריק
+          ? button.classList.replace('far', 'fas')
+          : button.classList.replace('fas', 'far');
         button.style.color = button.classList.contains('liked') ? 'red' : '';
 
-        // Update like count
         const likeCount = button.closest('.insta-post').querySelector('.like-count');
         likeCount.textContent = updated.likes.length;
       });
     });
 
-    // ===== Comment icon -> focus & scroll to input =====
+    // focus comment
     document.querySelectorAll('.comment-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const post = btn.closest('.insta-post');
@@ -180,20 +179,20 @@ async function loadFeed() {
       });
     });
 
-    // ===== Comment Submit =====
+    // submit comment
     document.querySelectorAll('.comment-form').forEach(form => {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const postId = form.getAttribute('data-postid');
         const input = form.querySelector('input[name="comment"]');
-        const text = input.value.trim();
+        const text  = input.value.trim();
         if (!text) return;
 
         await fetch(`${backendURL}/api/posts/${postId}/comments`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
+            Authorization: `Bearer ${localStorage.getItem('token')}`
           },
           body: JSON.stringify({ text })
         });
@@ -278,7 +277,6 @@ async function doSearch(query, mode){
     return;
   }
 
-  // cancel previous
   if (searchAbort) searchAbort.abort();
   searchAbort = new AbortController();
 
@@ -295,11 +293,13 @@ async function doSearch(query, mode){
     const data = await res.json();
     renderResults(Array.isArray(data) ? data : [], (data && data.length) ? '' : 'No results.');
   } catch(e){
-    if (e.name === 'AbortError') return;
-    renderResults([], 'Error while searching.');
-    console.error(e);
+    if (e.name !== 'AbortError') {
+      renderResults([], 'Error while searching.');
+      console.error(e);
+    }
   }
 }
+
 function renderResults(items, emptyMsg){
   const list = document.getElementById('searchResultsList');
   if (!list) return;
@@ -311,33 +311,23 @@ function renderResults(items, emptyMsg){
 
   const rows = items.map(item => {
     if (searchMode === 'groups'){
-      const cover = fixImageUrl(
-        item.cover || item.image || '/uploads/default-cover.jpg',
-        'groupCover'
-      );
+      const cover = fixImageUrl(item.cover || item.image || '/uploads/default-cover.jpg', 'groupCover');
       const members = item.members?.length || 0;
       const href = `create-post.html?groupId=${encodeURIComponent(item._id)}`;
       return `
         <a class="result-row" href="${href}">
-          <img class="result-avatar" src="${cover}" onerror="this.src='${fixImageUrl('/uploads/default-cover.jpg')}'" />
+          <img class="result-avatar" src="${cover}" alt="${escapeHtml(item.name || 'Group')}" />
           <div class="result-meta">
             <div class="result-title">${escapeHtml(item.name || 'Group')}</div>
             <div class="result-sub">${members} members</div>
           </div>
         </a>`;
     } else {
-      const avatar = fixImageUrl(
-        item.profileImage || item.avatar || item.image || '/uploads/default-avatar.png',
-        'avatar'
-      );
-
-      // ✅ כאן תראה מה הגיע מהשרת ומה נבנה ל־URL
-      console.log("👤 avatar path:", item.avatar, "=>", avatar);
-
+      const avatar = avatarUrl(item.profileImage || item.avatar || item.image);
       const href   = `profile.html?userId=${encodeURIComponent(item._id)}`;
       return `
         <a class="result-row" href="${href}">
-          <img class="result-avatar" src="${avatar}" onerror="this.src='${fixImageUrl('/uploads/default-avatar.png')}'" />
+          <img class="result-avatar" src="${avatar}" alt="${escapeHtml(item.username || 'user')}" />
           <div class="result-meta">
             <div class="result-title">${escapeHtml(item.username || 'user')}</div>
             <div class="result-sub">${escapeHtml(item.fullName || item.bio || '')}</div>
@@ -349,16 +339,7 @@ function renderResults(items, emptyMsg){
   list.innerHTML = rows;
 }
 
-
-// small helper used above
-function escapeHtml(str=''){
-  return String(str)
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'",'&#39;');
-}
+// ===== Suggested users =====
 async function loadSuggestions() {
   const container = document.getElementById('suggestionsList');
   if (!container) return;
@@ -368,39 +349,53 @@ async function loadSuggestions() {
     const res = await fetch(`${backendURL}/api/users/suggestions/random`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error("Failed to fetch suggestions");
+    if (!res.ok) throw new Error('Failed to fetch suggestions');
     const users = await res.json();
+
+    if (!Array.isArray(users) || users.length === 0) {
+      container.innerHTML = `<p style="color:#888;">No suggestions right now</p>`;
+      return;
+    }
 
     container.innerHTML = users.map(u => `
       <div class="suggestion-user">
-        <a class="suggestion-info" href="profile.html?userId=${encodeURIComponent(u._id)}" style="display:flex;gap:10px;align-items:center;text-decoration:none;color:#fff;">
-          <img src="${fixImageUrl(u.avatar || '/uploads/default-avatar.png', 'avatar')}"
-               class="suggestion-avatar"
-               onerror="this.src='${fixImageUrl('/uploads/default-avatar.png')}'" />
+        <a class="suggestion-info"
+           href="profile.html?userId=${encodeURIComponent(u._id)}"
+           style="display:flex;gap:10px;align-items:center;text-decoration:none;color:#fff;">
+          <img class="suggestion-avatar"
+               src="${avatarUrl(u.avatar)}"
+               alt="${escapeHtml(u.username || '')}">
           <div style="min-width:0">
-            <div class="suggestion-username" style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-              ${u.username}
+            <div class="suggestion-username"
+                 style="font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${escapeHtml(u.username || '')}
             </div>
-            <div class="suggestion-sub" style="color:#aaa;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-              ${u.fullname || ''}
+            <div class="suggestion-sub"
+                 style="color:#aaa;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${escapeHtml(u.fullname || '')}
             </div>
           </div>
         </a>
-        <button class="follow-btn" data-userid="${u._id}" aria-label="Follow ${u.username}">Follow</button>
+        <button class="follow-btn"
+                data-userid="${u._id}"
+                aria-label="Follow ${escapeHtml(u.username || '')}"
+                title="Follow ${escapeHtml(u.username || '')}">
+          Follow
+        </button>
       </div>
     `).join('');
 
-    wireSuggestionButtons(); // ⬅️ מחברים מאזינים אחרי הרינדור
+    wireSuggestionButtons();
   } catch (err) {
-    console.error("❌ Failed to load suggestions:", err);
+    console.error('❌ Failed to load suggestions:', err);
     container.innerHTML = `<p style="color:#888;">Failed to load suggestions</p>`;
   }
 }
 
-// מחבר מאזינים לכל כפתורי Follow שנוצרו עכשיו
+// חיבור מאזינים לכפתורי Follow (מונע כפילויות)
 function wireSuggestionButtons() {
   document.querySelectorAll('.follow-btn').forEach(btn => {
-    btn.removeEventListener('click', onFollowClick); // הגנה מכפילויות
+    btn.removeEventListener('click', onFollowClick);
     btn.addEventListener('click', onFollowClick);
   });
 }
@@ -420,15 +415,11 @@ async function onFollowClick(e) {
     });
     const data = await res.json();
 
-    // אם השרת מחזיר "Followed" / "Unfollowed" – נטפל בהתאם
     if (res.ok) {
-      const followed = /followed/i.test(data.message || ''); // true אם Followed
-      // אפשרות א: להחליף טקסט ולשמור מצב
+      const followed = /followed/i.test(data.message || '');
       btn.textContent = followed ? 'Following' : 'Follow';
       btn.classList.toggle('is-following', followed);
-
-      // אפשרות ב (חלופית): להסיר מההצעות אחרי Follow:
-      // if (followed) btn.closest('.suggestion-user')?.remove();
+      btn.setAttribute('aria-pressed', String(followed));
     } else {
       console.error('Follow API error:', data);
       btn.textContent = 'Error';
@@ -442,3 +433,34 @@ async function onFollowClick(e) {
     btn.disabled = false;
   }
 }
+
+
+// ===================== Stories =====================
+async function loadStories() {
+  const token  = localStorage.getItem('token');
+  const userId = localStorage.getItem('userId');
+  if (!token || !userId || !storiesBar) return;
+
+  try {
+    const res = await fetch(`${backendURL}/api/users/${userId}/following/stories`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to load stories');
+    const users = await res.json();
+
+    storiesBar.innerHTML = users.map(u => `
+      <a class="story-circle"
+         href="profile.html?userId=${encodeURIComponent(u._id)}"
+         title="${escapeHtml(u.username || '')}"
+         aria-label="Open ${escapeHtml(u.username || '')} profile"
+         style="text-decoration:none;color:inherit">
+        <img src="${avatarUrl(u.avatar)}" alt="${escapeHtml(u.username || '')}" />
+        <span>${escapeHtml(u.username || '')}</span>
+      </a>
+    `).join('');
+  } catch (err) {
+    console.error("❌ Failed to load stories:", err);
+    storiesBar.innerHTML = `<p style="color:#888;">Failed to load stories</p>`;
+  }
+}
+
