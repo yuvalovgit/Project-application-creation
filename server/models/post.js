@@ -13,7 +13,7 @@ const PostSchema = new mongoose.Schema({
   content: String,
   image:   String,
   video:   String,
-  group:   { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true },
+  group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: false, default: null },
   author:  { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   likes:   [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   comments:[commentSchema],

@@ -12,6 +12,15 @@ function avatarUrl(raw) {
   if (/^(data:|blob:|https?:\/\/)/i.test(raw)) return raw;
   return fixImageUrl(raw, 'avatar');
 }
+function shuffle(array) {
+  const a = [...array];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 
 // ===== Helper to fix media URL (robust) =====
 function fixImageUrl(url, type = 'generic') {
@@ -63,9 +72,13 @@ async function loadFeed() {
     }
 
     const posts = await res.json();
+
+    // 👇 פה אנחנו מערבבים את המערך כך שהסדר יהיה אקראי בכל טעינה
+    const list = Array.isArray(posts) ? shuffle(posts) : [];
+
     postsGrid.innerHTML = '';
 
-    posts.forEach(post => {
+    list.forEach(post => {
       const postDiv = document.createElement('div');
       postDiv.className = 'insta-post';
 

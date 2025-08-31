@@ -821,3 +821,10 @@ color: black;
   background: #333;
 }
 .member-follow.is-following { opacity: .85; }
+/* comments modal tweaks (optional) */
+.comments-list .row { display:flex; gap:10px; align-items:flex-start; padding:10px; border-radius:10px; }
+.comments-list .row:hover { background:#0f0f0f; }
+.comments-list .avatar { width:36px; height:36px; border-radius:50%; object-fit:cover; }
+.comments-list .meta { flex:1; }
+.comments-list .meta .user { font-weight:700; margin-right:6px; }
+.comments-list .meta .time { color:#9b9b9b; font-size:12px; margin-left:6px; }

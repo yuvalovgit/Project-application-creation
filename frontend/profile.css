@@ -361,32 +361,34 @@ body {
 .modal-option-btn:hover {
   background: #555;
 }
-
-/* ===== סיידבר + בוטום נאב ===== */
+/*==================== SIDEBAR ====================*/
 .sidebar {
   position: fixed;
   top: 0;
   left: 0;
   background-color: #000;
-  display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 15px 0;
-  width: 220px;
-  height: 100vh;
+  padding: 15px;
+  padding-top: 1rem;
   z-index: 1000;
+  width: 220px;
+  height: 100vh;     /* 👈 במקום auto */
+  box-sizing: border-box;
+  display: flex;
 }
 
 .sidebar::after {
   content: '';
   position: absolute;
   top: 0;
-  right: -25px;
+  right: 0;          /* 👈 שים ב-0 כדי להצמיד לגבול */
   width: 1px;
-  height: 100%;
+  height: 100vh;     /* 👈 דואג לקו עד סוף המסך */
   background-color: #262626;
 }
 
+.sidebar .logo,
 .sidebar h2 {
   font-family: 'Grand Hotel', cursive;
   font-size: 36px;
@@ -399,7 +401,6 @@ body {
   list-style: none;
   padding: 0;
   margin: 0;
-  width: 100%;
 }
 
 .sidebar li {
@@ -408,9 +409,15 @@ body {
   gap: 10px;
   font-size: 16px;
   margin: 20px 0;
+  cursor: pointer;
 }
 
-.sidebar a, .sidebar-link {
+.sidebar li img {
+  width: 24px;
+  height: 24px;
+}
+
+.sidebar a {
   color: #ffffff;
   text-decoration: none;
   display: flex;
@@ -419,12 +426,16 @@ body {
   font-size: 20px;
   padding: 12px 20px;
   border-radius: 12px;
-  width: 100%;
-  transition: background-color 0.3s;
+  width: 110%;
+  transition: background-color 0.3s ease;
 }
-
-.sidebar a:hover, .sidebar-link:hover {
+.sidebar a:hover,
+.sidebar a:focus {
   background-color: #262626;
+}
+/* רספונסיביות – מסתירים סיידבר במובייל (אם צריך, כי יש לך bottom nav) */
+@media (max-width: 768px){
+  .sidebar{ display: none; }
 }
 
 .bottom-nav {
@@ -465,40 +476,8 @@ body {
   font-size: 12px;
   color: #888;
 }
-#postModal .modal-content {
-  display: flex;
-  flex-direction: row;
-  gap: 20px;
-  max-height: 80vh;
-  overflow: hidden;
-}
 
-#postModal .modal-image-container {
-  flex: 2; /* תמונה גדולה יותר */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
 
-#postModal .modal-image-container img {
-  max-width: 100%;
-  max-height: 80vh;
-  object-fit: contain;
-}
-
-#postModal .modal-content-container {
-  flex: 1; /* טקסט ותגובות קטנים יותר */
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-}
-
-#postModal #postComments {
-  flex-grow: 1;
-  overflow-y: auto;
-  margin-bottom: 10px;
-}
 /* ====================== Modals: base ====================== */
 .hidden { display: none !important; }
 
@@ -515,19 +494,20 @@ body {
   transition: opacity .2s ease-in-out;
 }
 
-.modal.confirm-modal { /* can share the same base */ }
 
-.modal .modal-content {
-  width: 100%;
-  max-width: 520px;
-  background: #121212;          /* dark surface */
-  color: #eaeaea;               /* text */
-  border: 1px solid #2a2a2a;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-  padding: 18px;
-  animation: popIn .16s ease-out;
+/* חל רק על מודל פוסט */
+#postModal .modal-content {
+  width: 90vw;
+  max-width: 1200px;
+  height: 90vh;
+  display: flex;
+  background-color: #222;
+  border-radius: 10px;
+  color: white;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(0,0,0,0.8);
 }
+
 
 @keyframes popIn {
   from { transform: translateY(6px) scale(0.98); opacity: .9; }
@@ -860,3 +840,622 @@ hr {
   white-space: pre-wrap; /* שורות חדשות */
 }
 
+/* ==== Search drawer (Instagram-like) ==== */
+
+.search-header{ display:flex; align-items:center; justify-content:space-between;
+  padding:16px; border-bottom:1px solid #262626; }
+.search-header h3{ margin:0; font-size:18px; font-weight:700; }
+.search-close{ background:none; border:none; color:#aaa; font-size:18px; cursor:pointer; }
+
+.search-box{ display:flex; align-items:center; gap:8px; padding:10px 14px; }
+.search-box i{ color:#aaa; }
+#searchInput{
+  flex:1; padding:10px 12px; border:1px solid #2c2c2c; border-radius:8px;
+  background:#1a1a1a; color:#fff; outline:none;
+}
+.clear-btn{ background:#222; border:1px solid #2c2c2c; color:#aaa; width:32px; height:32px;
+  border-radius:8px; cursor:pointer; display:none; }
+.clear-btn:hover{ background:#2a2a2a; }
+
+.search-tabs{ display:flex; gap:8px; padding:0 14px 10px; border-bottom:1px solid #262626; }
+.tab-btn{
+  flex:1; padding:8px 10px; background:#1a1a1a; color:#ddd; border:1px solid #2c2c2c;
+  border-radius:8px; cursor:pointer; font-weight:600;
+}
+.tab-btn.active{ background:#0a58ca; border-color:#0a58ca; color:#fff; }
+
+.results{ flex:1; overflow:auto; padding:8px 0; }
+.result-row{
+  display:flex; align-items:center; gap:12px; padding:10px 16px; cursor:pointer;
+}
+.result-row:hover{ background:#1a1a1a; }
+.result-avatar{
+  width:44px; height:44px; border-radius:50%; object-fit:cover; background:#222;
+}
+.result-meta{ display:flex; flex-direction:column; min-width:0; }
+.result-title{
+  color:#fff; font-weight:700; font-size:14px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.result-sub{
+  color:#aaa; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.results .empty{ color:#888; font-size:13px; padding:12px 16px; }
+
+/* Search drawer – left side like Instagram */
+#searchDrawer{
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 220px;
+  right: auto;
+  width: 360px;
+  background: #111;
+  border-right: 1px solid #262626;
+  border-left: none;
+  display: none;
+  flex-direction: column;
+  z-index: 1100;
+  box-shadow: 0 0 20px rgba(0,0,0,.35);
+}
+
+#modalOverlay{
+  position: fixed !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 220px !important;
+  right: 0 !important;
+  background: transparent !important;
+  z-index: 1050 !important;
+  display: none;
+}
+
+@media (max-width: 1199px){
+  #searchDrawer{ left: 0; width: 360px; border-right: 1px solid #262626; }
+  #modalOverlay{ left: 0 !important; }
+}
+
+@media (max-width: 768px){
+  #searchDrawer{
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    border-right: none;
+  }
+}
+/* ברירת מחדל: לא מוצג בדסקטופ */
+.bottom-nav { display: none; }
+
+/* מוצג רק במובייל/טאבלט */
+@media (max-width: 768px) {
+  .bottom-nav {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    padding: 8px 0;
+    background: #000;
+    color: #fff;
+    border-top: 1px solid #222;
+    z-index: 999;
+  }
+  .bottom-nav a { color: #fff; text-decoration: none; }
+}
+/* =========================
+   Followers / Following modal (dark IG)
+   ========================= */
+
+/* קופסה */
+#followModal .modal-content{
+  width: 90vw;
+  max-width: 520px;
+  background: #121212;
+  color: #eee;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  overflow: hidden; /* header sticky + list */
+}
+
+/* כותרת */
+#followModal .modal-header{
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #121212;
+  border-bottom: 1px solid #1f1f1f;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#followModal #followModalTitle{
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #f5f5f5;
+}
+#followModal .modal-header .close-btn{
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  font-size: 22px;
+  line-height: 1;
+  background: none;
+  border: 0;
+  color: #e8e8e8;
+  cursor: pointer;
+}
+#followModal .modal-header .close-btn:hover{ color: #fff; }
+
+/* גוף המודל + סקרול דק */
+#followModal .modal-body{
+  padding: 8px 0 0;
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+}
+#followModal .modal-body::-webkit-scrollbar{ width: 8px; }
+#followModal .modal-body::-webkit-scrollbar-thumb{
+  background: #2b2b2b; border-radius: 8px;
+}
+#followModal .modal-body::-webkit-scrollbar-track{ background: transparent; }
+
+/* חיפוש */
+#followSearchInput{
+  display: block;
+  width: calc(100% - 24px);
+  margin: 0 12px 10px;
+  padding: 10px 12px 10px 36px;
+  border-radius: 12px;
+  border: 1px solid #232323;
+  outline: none;
+  background:
+    #0f0f0f
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23999999" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.415l-3.85-3.85h-.017zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>')
+    no-repeat 12px 50%;
+  background-size: 16px 16px;
+  color: #e6e6e6;
+  font-size: 14px;
+}
+#followSearchInput::placeholder{ color:#8a8a8a; }
+
+/* רשימה */
+#followList{ padding: 4px 0; }
+
+/* שורה (כמו אינסטה) */
+.follow-row{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.follow-row:hover{ background: #161616; }
+
+/* אווטאר */
+.follow-row .row-avatar{
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #2a2a2a;
+  flex: 0 0 44px;
+}
+
+/* טקסט */
+.follow-row .row-main{
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* ellipsis */
+  flex: 1;
+}
+.follow-row .row-username{
+  font-weight: 600;
+  color: #f1f1f1;
+  font-size: 14px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.follow-row .row-sub{
+  color: #a3a3a3;
+  font-size: 12px;
+  margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* כפתור פעולה (בסיס) */
+.follow-row .row-action{
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #2a2a2a;
+  background: transparent;
+  color: #e5e5e5;
+  cursor: pointer;
+}
+.follow-row .row-action:hover{ background: #1c1c1c; }
+
+/* מצבי הכפתור – ממש כמו אינסטה, אבל בדארק */
+.follow-row .row-action.primary{          /* Follow */
+  background: #0095f6;
+  border: none;
+  color: #fff;
+}
+.follow-row .row-action.primary:hover{ filter: brightness(1.05); }
+
+.follow-row .row-action.ghost{            /* Following */
+  background: transparent;
+  border-color: #3a3a3a;
+  color: #eaeaea;
+}
+.follow-row .row-action.ghost:hover{
+  background: #232323;
+}
+
+.follow-row .row-action.danger{           /* Remove */
+  background: transparent;
+  border-color: #3a2323;
+  color: #ff4d4f;
+}
+.follow-row .row-action.danger:hover{
+  background: #2a1515;
+}
+
+/* הטבליות/סטטיסטיקות בפרופיל – שיהיו "קליקים" ונקיות */
+.profile-stats{
+  display: flex;
+  gap: 14px;
+  margin-top: 8px;
+}
+.profile-stats .stat{
+  background: transparent;
+  border: 0;
+  color: #e6e6e6;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+.profile-stats .stat:hover{ background: #171717; }
+/* =========================
+   Followers / Following modal – Dark IG
+   ========================= */
+
+/* ממורכז קטן עם פינות עגולות – דריסה של כללים כלליים */
+#followModal.modal { 
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(2px);
+}
+
+#followModal .modal-content{
+  /* HARD OVERRIDES כדי למנוע מתיחה כללית */
+  width: 92vw !important;
+  max-width: 520px !important;
+  height: auto !important;
+  max-height: none !important;
+  display: block !important;
+
+  background: #121212;
+  color: #eee;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6);
+  overflow: hidden;
+  padding: 0; /* אינסטה – בלי רווחים חיצוניים */
+  animation: igPop .16s ease-out;
+}
+
+@keyframes igPop {
+  from { transform: translateY(6px) scale(.98); opacity: .9; }
+  to   { transform: translateY(0)  scale(1);   opacity: 1; }
+}
+
+/* כותרת דביקה כמו אינסטה */
+#followModal .modal-header{
+  position: sticky; top: 0; z-index: 2;
+  background: #121212;
+  border-bottom: 1px solid #1f1f1f;
+  padding: 12px 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+#followModal #followModalTitle{
+  margin: 0; font-size: 15px; font-weight: 600; color: #f5f5f5;
+}
+#followModal .modal-header .close-btn{
+  position: absolute; right: 12px; top: 8px;
+  font-size: 22px; line-height: 1; color: #dcdcdc;
+  background: none; border: 0; cursor: pointer;
+}
+#followModal .modal-header .close-btn:hover{ color: #fff; }
+
+/* גוף המודל + סקרול דק ועדין */
+#followModal .modal-body{
+  padding: 8px 0 0;
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+}
+#followModal .modal-body::-webkit-scrollbar{ width: 8px; }
+#followModal .modal-body::-webkit-scrollbar-thumb{ background: #2b2b2b; border-radius: 8px; }
+#followModal .modal-body::-webkit-scrollbar-track{ background: transparent; }
+
+/* תיבת חיפוש עם אייקון */
+#followSearchInput{
+  display: block;
+  width: calc(100% - 24px);
+  margin: 0 12px 10px;
+  padding: 10px 12px 10px 36px;
+  border-radius: 12px;
+  border: 1px solid #232323;
+  background:
+    #0f0f0f
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23999999" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.415l-3.85-3.85h-.017zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>')
+    no-repeat 12px 50%;
+  background-size: 16px 16px;
+  color: #e6e6e6;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+#followSearchInput::placeholder{ color:#8a8a8a; }
+#followSearchInput:focus{
+  border-color:#3f51b5;
+  box-shadow: 0 0 0 3px rgba(63,81,181,.2);
+}
+
+/* רשימה */
+#followList{ padding: 4px 0; }
+
+/* שורת משתמש – 1:1 אינסטה בדארק */
+.follow-row{
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; cursor: pointer;
+}
+.follow-row:hover{ background: #161616; }
+
+/* טבעת סטורי עדינה מסביב לאווטאר (עובד גם על <img>) */
+.follow-row .row-avatar{
+  width: 44px; height: 44px; flex: 0 0 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  padding: 2px;                                   /* טבעת */
+  background: conic-gradient(#f99, #f0f, #f90, #f99);
+  border: 1px solid #222;
+}
+.follow-row .row-avatar::selection{ background: transparent; }
+
+/* טקסט */
+.follow-row .row-main{
+  display: flex; flex-direction: column; min-width: 0; flex: 1;
+}
+.follow-row .row-username{
+  font-weight: 600; color: #f1f1f1; font-size: 14px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.follow-row .row-sub{
+  color: #a3a3a3; font-size: 12px; margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* כפתור פעולה – מצבים */
+.follow-row .row-action{
+  font-size: 13px; padding: 6px 12px;
+  border-radius: 8px; border: 1px solid #2a2a2a;
+  background: transparent; color: #e5e5e5; cursor: pointer;
+}
+.follow-row .row-action:hover{ background: #1c1c1c; }
+
+/* Follow (כחול) */
+.follow-row .row-action.primary{
+  background: #0095f6; border: none; color: #fff;
+}
+.follow-row .row-action.primary:hover{ filter: brightness(1.05); }
+
+/* Following (Ghost) */
+.follow-row .row-action.ghost{
+  background: transparent; border-color: #3a3a3a; color: #eaeaea;
+}
+.follow-row .row-action.ghost:hover{ background: #232323; }
+
+/* Remove (אדום קל) */
+.follow-row .row-action.danger{
+  background: transparent; border-color: #3a2323; color: #ff4d4f;
+}
+.follow-row .row-action.danger:hover{ background: #2a1515; }
+/* אל תצמיד את הפריט האחרון למטה */
+.sidebar ul li:last-child{ 
+  margin-top: 0 !important;
+}
+/* --- Sidebar: unify links + buttons (e.g., the Create button) --- */
+.sidebar li > a,
+.sidebar li > button {
+  /* reset button defaults + match link look */
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  text-decoration: none;
+
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 20px;
+  line-height: 1;
+  padding: 12px 20px;
+  border-radius: 12px;
+  width: 110%;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.sidebar li > a:hover,
+.sidebar li > a:focus,
+.sidebar li > button:hover,
+.sidebar li > button:focus {
+  background-color: #262626;
+  outline: none;
+}
+
+/* ensure icons (font-awesome) align like the others */
+.sidebar li i {
+  width: 24px;              /* reserving icon box like the <img> rule */
+  text-align: center;
+  font-size: 20px;
+}
+
+/* specifically target the Create button if needed */
+
+/* if אי פעם היה כלל שדחף את הכפתור לתחתית (margin-top:auto) – ננטרל אותו: */
+.sidebar li.create-at-bottom,
+.sidebar .sidebar-link.create-at-bottom {
+  margin-top: 0 !important;
+}
+.profile-tabs{
+  display:flex; gap:40px; justify-content:center; margin:10px 0 16px;
+}
+.profile-tab-btn{
+  background:none; border:0; color:#aaa; font-weight:700; cursor:pointer;
+  display:flex; align-items:center; gap:8px; padding:6px 8px;
+}
+.profile-tab-btn.active{ color:#fff; border-top:1px solid #fff; }
+.profile-tab-panel.hidden{ display:none; } /* יש לך כבר .hidden – זה רק לדיוק */
+/* גם לגריד של "Posts" וגם לגריד של "Groups" */
+.posts-grid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); /* כמו אינסטה – 3 עמודות */
+  gap: 5px;
+}
+
+/* אריח כמו אינסטה – בלי פדינג או רקע */
+.posts-grid .post{
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  position: relative;
+}
+
+/* המדיה ריבועית וצמודה לקצוות */
+.posts-grid .post img.post-image,
+.posts-grid .post video.post-video{
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;     /* ריבוע */
+  object-fit: cover;       /* חיתוך כמו אינסטה */
+  border-radius: 0;
+  cursor: pointer;
+}
+
+/* לא להציג טקסט בתוך האריחים בגריד */
+.posts-grid .post .post-content{ display:none; }
+/* אם אין סטוריז – אל תציג בכלל, וכך לא יתווספו קווים */
+.profile-stories:empty { display: none; }
+
+/* לביטחון, גם נבטל לו גבולות */
+.profile-stories { border: 0; padding-bottom: 0; margin-bottom: 0; }
+
+/* קו אחד בלבד לטאבים (מעל הטאבים). אם תרצה קו מתחת – שנה ל-border-bottom */
+.profile-tabs { border-top: 1px solid #262626; border-bottom: none; }
+/* ===== Instagram-like Post Modal (final override) ===== */
+#postModal .modal-content{
+  /* עוקף כל המקדמים הקודמים */
+  width: min(95vw, 1100px) !important;
+  max-width: none !important;
+  height: min(90vh, 840px) !important;
+  padding: 0 !important;
+  display: flex !important;
+  background: #000 !important;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(0,0,0,.8);
+}
+
+/* צד התמונה */
+#postModal .modal-image-container{
+  flex: 1 1 auto;
+  min-width: 0;               /* קריטי כדי שהתמונה לא תידחק */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+#postModal #postModalImage img,
+#postModal #postModalImage video{
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  background: #000;
+}
+
+/* טור התגובות – רוחב קבוע כמו אינסטה */
+#postModal .modal-content-container{
+  flex: 0 0 405px !important; /* 👈 מונע מהטור להתפרס */
+  width: 405px !important;
+  min-width: 0;
+  background: #111;
+  border-left: 1px solid #262626;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+
+/* כותרת הטור */
+#postModal .post-header{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0 12px;
+  margin: 0 0 12px;
+  border-bottom: 1px solid #262626;
+}
+.post-author-avatar{ width: 35px; height: 35px; border-radius: 50%; object-fit: cover; }
+.post-author-username{ font-weight: 700; font-size: 1rem; }
+.modal-options-btn{
+  margin-left: auto;
+  background: none; border: 0; color: #fff; font-size: 22px; cursor: pointer;
+}
+
+/* רשימת תגובות */
+#postModal #postComments{
+  flex: 1 1 auto;
+  overflow-y: auto;
+  color: #eee;
+}
+
+/* פוטר של לייק+טופס */
+#postModal .modal-footer{
+  border-top: 1px solid #262626;
+  padding-top: 10px;
+  margin-top: 10px;
+}
+#postModal #likeBtn{ background: none; border: 0; font-size: 24px; cursor: pointer; }
+#postModal #likesCount{ margin-left: 8px; }
+#postModal .comment-form{
+  display: flex; gap: 10px; margin-top: 10px;
+}
+#postModal .comment-form input{
+  flex: 1 1 auto; padding: 8px; border-radius: 6px; border: none; background:#1a1a1a; color:#eee;
+}
+#postModal .comment-form button{
+  padding: 8px 15px; border-radius: 6px; border: none; background: #0095f6; color: #fff; font-weight: 700; cursor: pointer;
+}
+
+/* מובייל – כמו אינסטה: התמונה למעלה, תגובות מתחת */
+@media (max-width: 900px){
+  #postModal .modal-content{
+    width: 100vw !important;
+    height: 100vh !important;
+    border-radius: 0;
+    flex-direction: column;
+  }
+  #postModal .modal-content-container{
+    width: 100% !important;
+    flex: 0 0 auto !important;
+    border-left: 0;
+    border-top: 1px solid #262626;
+  }
+}

@@ -104,7 +104,11 @@ const topicsContainer = document.getElementById('topicsContainer');
 
 // סדר הופעה מועדף; מה שלא ברשימה ייכנס ל-"other"
 const TOPIC_ORDER = ['sports', 'music', 'technology', 'travel', 'general'];
-
+function createdTs(g){
+  if (g.createdAt) return new Date(g.createdAt).getTime();
+  if (g._id) return parseInt(String(g._id).slice(0, 8), 16) * 1000; // fallback
+  return 0;
+}
 function groupByTopic(groups){
   const map = new Map();
   for (const g of groups){
@@ -113,7 +117,11 @@ function groupByTopic(groups){
     if (!map.has(k)) map.set(k, []);
     map.get(k).push(g);
   }
-  // סדר: לפי TOPIC_ORDER ואז other
+  // מיון בכל topic מהחדש לישן
+  for (const [, list] of map){
+    list.sort((a,b) => createdTs(b) - createdTs(a));
+  }
+  // החזרת המערכים לפי סדר ה־topics הרצוי
   const sorted = [];
   for (const t of TOPIC_ORDER){ if (map.has(t)) sorted.push([t, map.get(t)]); }
   if (map.has('other')) sorted.push(['other', map.get('other')]);

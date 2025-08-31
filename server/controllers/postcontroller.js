@@ -1,21 +1,30 @@
-const Post = require('../models/post');
-const User = require('../models/user');
+const Post  = require('../models/post');
+const User  = require('../models/user');
 const Group = require('../models/Group');
+const mongoose = require('mongoose');
 
-// יצירת פוסט חדש (תמונה / וידאו)
+/* יצירת פוסט חדש (פרופיל אישי או קבוצה) */
 const createPost = async (req, res) => {
   try {
-    const { content, group } = req.body;
+    const { content } = req.body;
+    const rawGroup = req.body.group;
+    const group = rawGroup && rawGroup !== 'null' && rawGroup !== 'undefined' ? rawGroup : null;
+
     let image = null;
     let video = null;
 
-  if (req.file) {
-  const filename = req.file.filename;
-  const filePath = `/uploads/posts/${filename}`;
-  if (req.file.mimetype.startsWith('image/')) image = filePath;
-  else if (req.file.mimetype.startsWith('video/')) video = filePath;
-}
+    // קובץ מצורף (תמונה/וידאו) -> שמירת נתיב ציבורי
+    if (req.file) {
+      const filename = req.file.filename; // multer שם את שם הקובץ
+      const filePath = `/uploads/posts/${filename}`;
+      if (req.file.mimetype?.startsWith('image/')) image = filePath;
+      else if (req.file.mimetype?.startsWith('video/')) video = filePath;
+      else {
+        return res.status(400).json({ error: 'Unsupported file type' });
+      }
+    }
 
+    // אם נשלחה קבוצה - בדיקת קיום וחברות
     if (group) {
       const groupObj = await Group.findById(group);
       if (!groupObj) return res.status(404).json({ error: 'Group not found' });
@@ -25,35 +34,44 @@ const createPost = async (req, res) => {
     }
 
     const newPost = await Post.create({
-      content,
+      author: req.user.id,
+      content: content || '',
       image,
       video,
-      group: group || null,
-      author: req.user.id
+      group: group || null
     });
 
-    const populatedPost = await Post.findById(newPost._id).populate('author', 'username avatar');
-    res.status(201).json(populatedPost);
+    const populatedPost = await Post.findById(newPost._id)
+      .populate('author', 'username avatar')
+      .populate({ path: 'comments.author', select: 'username avatar' });
+
+    return res.status(201).json(populatedPost);
   } catch (err) {
     console.error('Error creating post:', err);
-    res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: err.message });
   }
 };
 
-// פיד – כולל פוסטים של חברים ושל קבוצות
+/* פיד – פוסטים של מי שאני עוקב אחריו + שלי, וגם מקבוצות שאני חבר בהן */
 const getFeed = async (req, res) => {
   try {
     const currentUserId = req.user.id;
-    const user = await User.findById(currentUserId);
+    const user = await User.findById(currentUserId).select('following');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // שליפת כל הקבוצות שהמשתמש חבר בהן
+    // כל הקבוצות שבהן המשתמש חבר
     const groups = await Group.find({ members: user._id }, '_id');
     const groupIds = groups.map(g => g._id);
 
+    // רשימת מחברים: מי שאני עוקב אחריו + אני
+    const authorIds = [
+      ...user.following.map(f => f.toString()),
+      currentUserId.toString()
+    ].map(id => new mongoose.Types.ObjectId(id));
+
     const feedPosts = await Post.find({
       $or: [
-        { author: { $in: [...user.following, currentUserId] } },
+        { author: { $in: authorIds } },
         { group: { $in: groupIds } }
       ]
     })
@@ -61,14 +79,30 @@ const getFeed = async (req, res) => {
       .populate('author', 'username avatar')
       .populate({ path: 'comments.author', select: 'username avatar' });
 
-    res.json(feedPosts);
+    return res.json(feedPosts);
   } catch (err) {
     console.error('Error fetching feed:', err);
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// פוסט בודד לפי ID
+/* פוסטים של משתמש מסוים (לפרופיל) */
+const getUserPosts = async (req, res) => {
+  try {
+    const { userId } = req.params; // ודא שהנתיב תואם ל-route שלך
+    const posts = await Post.find({ author: userId })
+      .sort({ createdAt: -1 })
+      .populate('author', 'username avatar')
+      .populate({ path: 'comments.author', select: 'username avatar' });
+
+    return res.json(posts);
+  } catch (err) {
+    console.error('Error fetching user posts:', err);
+    return res.status(500).json({ message: err.message });
+  }
+};
+
+/* פוסט בודד לפי ID */
 const getSinglePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.postId)
@@ -76,14 +110,14 @@ const getSinglePost = async (req, res) => {
       .populate({ path: 'comments.author', select: 'username avatar' });
 
     if (!post) return res.status(404).json({ message: 'Post not found' });
-    res.json(post);
+    return res.json(post);
   } catch (err) {
     console.error('Error fetching single post:', err);
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// לייק / ביטול לייק
+/* לייק / ביטול לייק */
 const likePost = async (req, res) => {
   try {
     const postId = req.params.postId;
@@ -92,12 +126,9 @@ const likePost = async (req, res) => {
     const post = await Post.findById(postId);
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
-    const likedIndex = post.likes.indexOf(userId);
-    if (likedIndex === -1) {
-      post.likes.push(userId);
-    } else {
-      post.likes.splice(likedIndex, 1);
-    }
+    const idx = post.likes.findIndex(id => id.toString() === userId);
+    if (idx === -1) post.likes.push(userId);
+    else post.likes.splice(idx, 1);
 
     await post.save();
 
@@ -105,39 +136,42 @@ const likePost = async (req, res) => {
       .populate('author', 'username avatar')
       .populate({ path: 'comments.author', select: 'username avatar' });
 
-    res.json(updatedPost);
+    return res.json(updatedPost);
   } catch (err) {
     console.error('Error in likePost:', err);
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// הוספת תגובה
+/* הוספת תגובה */
 const addComment = async (req, res) => {
   try {
     const postId = req.params.postId;
     const userId = req.user.id;
     const { text } = req.body;
 
-    if (!text) return res.status(400).json({ message: 'Comment text is required' });
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: 'Comment text is required' });
+    }
 
     const post = await Post.findById(postId);
     if (!post) return res.status(404).json({ message: 'Post not found' });
 
-    post.comments.push({ author: userId, text });
+    post.comments.push({ author: userId, text: text.trim() });
     await post.save();
 
     const updatedPost = await Post.findById(postId)
       .populate('author', 'username avatar')
       .populate({ path: 'comments.author', select: 'username avatar' });
 
-    res.json(updatedPost);
+    return res.json(updatedPost);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Error adding comment:', err);
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// מחיקת פוסט (של עצמך)
+/* מחיקת פוסט (רק של עצמי) */
 const deletePost = async (req, res) => {
   try {
     const postId = req.params.postId;
@@ -151,17 +185,17 @@ const deletePost = async (req, res) => {
     }
 
     await post.deleteOne();
-    res.json({ message: 'Post deleted successfully' });
+    return res.json({ message: 'Post deleted successfully' });
   } catch (err) {
     console.error('Error deleting post:', err);
-    res.status(500).json({ message: err.message });
+    return res.status(500).json({ message: err.message });
   }
 };
 
-// ייצוא
 module.exports = {
   createPost,
   getFeed,
+  getUserPosts,     // הוסף את זה ל-routes אם טרם מופה
   getSinglePost,
   likePost,
   addComment,

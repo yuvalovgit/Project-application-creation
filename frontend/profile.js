@@ -1,11 +1,45 @@
+/* =========================================
+   profile.js  —  Full, clean and working
+   ========================================= */
 const backendURL = 'http://localhost:5000';
 
-/* ---------------------- Utils ---------------------- */
-function fixImageUrl(url) {
+/* -------- Shared media/search helpers -------- */
+const DEFAULT_AVATAR_DATAURI =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120"><rect width="120" height="120" fill="%23222222"/><circle cx="60" cy="45" r="22" fill="%23999"/><rect x="25" y="76" width="70" height="24" rx="12" fill="%23999"/></svg>';
+
+function fixImageUrl(url, type = 'generic') {
   if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return backendURL + url;
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith('/uploads')) return backendURL + url;
+  if (url.startsWith('uploads'))  return backendURL + '/' + url;
+
+  const folder =
+    type === 'avatar'     ? '/uploads/avatars/' :
+    type === 'groupCover' ? '/uploads/covers/'  :
+                             '/uploads/posts/';
+  return backendURL + folder + url;
 }
+
+function avatarUrl(raw) {
+  if (!raw || raw === 'null' || raw === 'undefined') return DEFAULT_AVATAR_DATAURI;
+  if (/^(data:|blob:|https?:\/\/)/i.test(raw)) return raw;
+  return fixImageUrl(raw, 'avatar');
+}
+
+function escapeHtml(str='') {
+  return String(str)
+    .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+    .replaceAll('"','&quot;').replaceAll("'",'&#39;');
+}
+
+const authHeaders = (extra = {}) => ({ ...extra, Authorization: `Bearer ${localStorage.getItem('token')}` });
+const groupCover = (g) => fixImageUrl(g.image || g.cover || '/uploads/default-cover.jpg', 'groupCover');
+function isGroupPost(p){
+  return !!(p?.group || p?.groupId || p?.group_id || (p?.group && p.group._id));
+}
+
+
+/* ---------------------- Small utils ---------------------- */
 function getUserIdFromToken(token) {
   try {
     const payload = token.split('.')[1];
@@ -24,11 +58,22 @@ const userIdFromUrl = urlParams.get('userId');
 const loggedInUserId = getUserIdFromToken(token);
 const userId = userIdFromUrl || loggedInUserId;
 const isOwnProfile = userId === loggedInUserId;
-let editBound = false;   // שלא יעשה binding פעמיים
-let currentUser = null;  // ישמור את נתוני המשתמש שנטענו
 
-/* Avoid double-binding for settings modal */
-let settingsBound = false;
+/* Flags */
+let editBound = false;     // prevent double-bind (edit profile)
+let settingsBound = false; // prevent double-bind (settings/delete)
+let currentUser = null;    // keep loaded user for edit prefill
+let currentPostId = null;  // used by comments/likes
+
+/* DOM refs used across file */
+const profileTabPosts  = document.getElementById('profileTabPosts');
+const profileTabGroups = document.getElementById('profileTabGroups');
+const panelProfilePosts = document.getElementById('panelProfilePosts');
+const panelGroupPosts   = document.getElementById('panelGroupPosts');
+const profilePostsGrid  = document.getElementById('profilePostsGrid');
+const groupPostsGrid    = document.getElementById('groupPostsGrid');
+const uploadPostSidebarBtn = document.getElementById('uploadPostSidebarBtn');
+const postImageUpload = document.getElementById('postImageUpload');
 
 /* Single DOMContentLoaded hook */
 window.addEventListener('DOMContentLoaded', loadUserProfile);
@@ -45,48 +90,43 @@ async function loadUserProfile() {
     const res = await fetch(`${backendURL}/api/users/${userId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-
     if (!res.ok) {
       alert('Failed to load profile');
       return;
     }
 
     const user = await res.json();
-     currentUser = user;          // נשמור את המשתמש הגלובלי
-    initEditProfileUI();         // נחבר את המודל של עריכת פרופיל
+    currentUser = user;
 
-    // Show/hide controls based on own vs other profile
+    initEditProfileUI();
+
+    // Show/hide controls
     const ownControls = document.getElementById('ownProfileControls');
     const otherControls = document.getElementById('otherProfileControls');
-
     if (isOwnProfile) {
-      if (ownControls) ownControls.style.display = 'flex';
-      if (otherControls) otherControls.style.display = 'none';
+      ownControls && (ownControls.style.display = 'flex');
+      otherControls && (otherControls.style.display = 'none');
     } else {
-      if (ownControls) ownControls.style.display = 'none';
-      if (otherControls) otherControls.style.display = 'flex';
+      ownControls && (ownControls.style.display = 'none');
+      otherControls && (otherControls.style.display = 'flex');
     }
 
     // Fill profile info
-    document.getElementById('profileImage').src = user.avatar ? fixImageUrl(user.avatar) : 'default-avatar.png';
+  document.getElementById('profileImage').src = user.avatar ? fixImageUrl(user.avatar, 'avatar') : DEFAULT_AVATAR_DATAURI;
     document.getElementById('username').textContent = user.username;
     document.getElementById('bio').textContent = user.bio || '';
     document.getElementById('postsCount').textContent = `${user.postsCount || 0} posts`;
-    document.getElementById('followersCount').textContent = `${user.followers.length} followers`;
-    document.getElementById('followingCount').textContent = `${user.following.length} following`;
+    document.getElementById('followersCount').textContent = `${(user.followers || []).length} followers`;
+    document.getElementById('followingCount').textContent = `${(user.following || []).length} following`;
 
-    // Edit/Upload buttons visibility (support id OR class)
+    // Buttons visibility
     const editBtnById = document.getElementById('editProfileBtn');
     const editBtnByClass = qs('.edit-profile-btn');
-    const uploadPostSidebarBtn = document.getElementById('uploadPostSidebarBtn');
-
     if (isOwnProfile) {
       setupProfileImageControls();
       editBtnById?.classList.remove('hidden');
       editBtnByClass?.classList.remove('hidden');
       uploadPostSidebarBtn?.classList.remove('hidden');
-
-      // Bind settings + delete account (once)
       initSettingsAndDeleteUI();
     } else {
       editBtnById?.classList.add('hidden');
@@ -114,7 +154,7 @@ function setupFollowButton(user) {
   }
 
   followBtn.style.display = 'inline-block';
-  const isFollowing = user.followers.some(f => f._id === loggedInUserId);
+  const isFollowing = (user.followers || []).some(f => f._id === loggedInUserId);
   followBtn.textContent = isFollowing ? 'Unfollow' : 'Follow';
 
   followBtn.onclick = async () => {
@@ -186,24 +226,21 @@ function setupProfileImageControls() {
   imageUpload?.addEventListener('change', async e => {
     const file = e.target.files[0];
     if (!file) return;
-
     const formData = new FormData();
     formData.append('avatar', file);
 
     try {
       const res = await fetch(`${backendURL}/api/users/${userId}/avatar`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }, // no Content-Type!
+        headers: { Authorization: `Bearer ${token}` }, // do NOT set Content-Type with FormData
         body: formData
       });
-
       if (!res.ok) {
         alert('Failed to update profile image');
         return;
       }
-
       const data = await res.json();
-      profileImage.src = fixImageUrl(data.avatar);
+      profileImage.src = fixImageUrl(data.avatar, 'avatar');
       profileModal.classList.add('hidden');
       loadUserProfile();
     } catch (error) {
@@ -218,18 +255,18 @@ function initSettingsAndDeleteUI() {
   if (settingsBound) return;
   settingsBound = true;
 
-  const settingsBtn = qs('.settings-btn');                       // gear icon
-  const settingsModal = document.getElementById('settingsModal'); // settings modal
+  const settingsBtn = qs('.settings-btn');
+  const settingsModal = document.getElementById('settingsModal');
   const closeSettingsBtn = document.getElementById('closeSettingsBtn');
 
-  const deleteAccountBtn = document.getElementById('deleteAccountBtn');       // button inside settings modal
-  const deleteAccountModal = document.getElementById('deleteAccountModal');   // confirm modal
+  const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+  const deleteAccountModal = document.getElementById('deleteAccountModal');
   const deleteConfirmInput = document.getElementById('deleteConfirmInput');
   const deleteAcknowledge = document.getElementById('deleteAcknowledge');
   const confirmDeleteAccountBtn = document.getElementById('confirmDeleteAccountBtn');
   const cancelDeleteAccountBtn = document.getElementById('cancelDeleteAccountBtn');
 
-  const logoutBtn = document.getElementById('logoutBtn'); // << NEW
+  const logoutBtn = document.getElementById('logoutBtn');
 
   // open/close settings
   on(settingsBtn, 'click', (e) => {
@@ -268,14 +305,12 @@ function initSettingsAndDeleteUI() {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
-
       if (!res.ok) {
         const txt = await res.text().catch(() => '');
         console.error('Delete failed:', txt);
         alert('Failed to delete account');
         return;
       }
-
       localStorage.removeItem('token');
       alert('Your account has been deleted.');
       window.location.href = 'login.html';
@@ -289,19 +324,19 @@ function initSettingsAndDeleteUI() {
   on(cancelDeleteAccountBtn, 'click', () => deleteAccountModal?.classList.add('hidden'));
   on(deleteAccountModal, 'click', (e) => { if (e.target === deleteAccountModal) deleteAccountModal.classList.add('hidden'); });
 
-  // ===== LOGOUT (NEW) =====
+  // logout
   on(logoutBtn, 'click', async () => {
     try {
-      // אם יש לך endpoint ל-logout בשרת, אפשר לנסות:
-      // await fetch(`${backendURL}/api/auth/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }).catch(()=>{});
+      // optional: await fetch(`${backendURL}/api/auth/logout`, { method:'POST', headers:{ Authorization:`Bearer ${token}` } }).catch(()=>{});
     } finally {
       settingsModal?.classList.add('hidden');
-      localStorage.removeItem('token');   // מנקה JWT
+      localStorage.removeItem('token');
       alert('You have been logged out.');
-      window.location.href = 'login.html'; // חזרה למסך התחברות
+      window.location.href = 'login.html';
     }
   });
 }
+
 /* ====================== Edit Profile (name, username, bio) ====================== */
 function initEditProfileUI() {
   if (editBound) return;
@@ -318,7 +353,6 @@ function initEditProfileUI() {
   const bioInput = document.getElementById('editBioInput');
 
   function prefill() {
-    // מילוי שדות מהמידע הנוכחי (אם חסר name בשרת, זה פשוט יישאר ריק)
     if (nameInput) nameInput.value = currentUser?.name || currentUser?.fullName || '';
     if (usernameInput) usernameInput.value = currentUser?.username || '';
     if (bioInput) bioInput.value = currentUser?.bio || '';
@@ -338,7 +372,7 @@ function initEditProfileUI() {
   cancelBtn?.addEventListener('click', close);
   modal?.addEventListener('click', (e) => { if (e.target === modal) close(); });
 
-  // שמירה
+  // save
   saveBtn?.addEventListener('click', async () => {
     const username = (usernameInput?.value || '').trim();
     const name = (nameInput?.value || '').trim();
@@ -348,7 +382,6 @@ function initEditProfileUI() {
       alert('Username is required');
       return;
     }
-    // ולידציה בסיסית לשם משתמש (ללא רווחים)
     if (/\s/.test(username)) {
       alert('Username cannot contain spaces');
       return;
@@ -361,16 +394,10 @@ function initEditProfileUI() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
-          // אם לשרת יש מפתח אחר לשם, אפשר לשנות כאן בהתאם (e.g. displayName)
-          name,            // או fullName / displayName לפי ה־API שלך
-          username,
-          bio
-        })
+        body: JSON.stringify({ name, username, bio })
       });
-
       if (!res.ok) {
-        const txt = await res.text().catch(()=>'');
+        const txt = await res.text().catch(()=> '');
         console.error('Update failed:', txt);
         alert('Failed to save changes');
         return;
@@ -379,7 +406,7 @@ function initEditProfileUI() {
       const updated = await res.json();
       currentUser = updated;
 
-      // עדכון UI מיידי
+      // immediate UI update
       document.getElementById('username').textContent = updated.username || username;
       const verifiedRow = document.querySelector('.profile-verified span');
       if (verifiedRow) verifiedRow.textContent = '@' + (updated.username || username);
@@ -394,7 +421,6 @@ function initEditProfileUI() {
   });
 }
 
-
 /* ======= CREATE POST modal logic ======= */
 const createModal = document.getElementById('createPostModal');
 const closeCreateModalBtn = document.getElementById('closeCreateModalBtn');
@@ -405,7 +431,7 @@ const previewBox = document.getElementById('createPreview');
 const captionInput = document.getElementById('createCaptionInput');
 const createSubmitBtn = document.getElementById('createSubmitBtn');
 
-let selectedFile = null; // קובץ שנבחר
+let selectedFile = null;
 
 function openCreateModal() {
   resetCreateModal();
@@ -416,23 +442,23 @@ function closeCreateModal() {
 }
 function resetCreateModal() {
   selectedFile = null;
-  captionInput.value = '';
-  createSubmitBtn.disabled = true;
-  previewBox.innerHTML = `<span style="color:#9b9b9b;">No media selected</span>`;
+  if (captionInput) captionInput.value = '';
+  if (createSubmitBtn) createSubmitBtn.disabled = true;
+  if (previewBox) previewBox.innerHTML = `<span style="color:#9b9b9b;">No media selected</span>`;
 }
 
-/* פותח את המודל בלחיצה על CREATE */
+/* open modal by sidebar "Create" */
 uploadPostSidebarBtn?.addEventListener('click', openCreateModal);
 
-/* סגירות */
+/* close */
 closeCreateModalBtn?.addEventListener('click', closeCreateModal);
 cancelCreateBtn?.addEventListener('click', closeCreateModal);
 createModal?.addEventListener('click', (e)=>{ if(e.target===createModal) closeCreateModal(); });
 
-/* בחירת קובץ דרך הקלט הקיים #postImageUpload */
+/* file chooser via #postImageUpload */
 pickMediaBtn?.addEventListener('click', () => postImageUpload?.click());
 
-/* תצוגת מקדימה והפעלת כפתור Post */
+/* preview + enable Post button */
 postImageUpload?.addEventListener('change', (e) => {
   const file = e.target.files?.[0];
   if (!file) {
@@ -440,29 +466,24 @@ postImageUpload?.addEventListener('change', (e) => {
     return;
   }
   selectedFile = file;
-  createSubmitBtn.disabled = false;
+  if (createSubmitBtn) createSubmitBtn.disabled = false;
 
   const url = URL.createObjectURL(file);
-  // נחליט אם תמונה או וידאו
   const isImage = file.type.startsWith('image/');
-  previewBox.innerHTML = isImage
-    ? `<img src="${url}" alt="preview" class="preview-media" />`
-    : `<video src="${url}" controls class="preview-media"></video>`;
+  if (previewBox) {
+    previewBox.innerHTML = isImage
+      ? `<img src="${url}" alt="preview" class="preview-media" />`
+      : `<video src="${url}" controls class="preview-media"></video>`;
+  }
 });
 
-/* ניקוי מדיה שנבחרה */
-clearMediaBtn?.addEventListener('click', () => {
-  if (postImageUpload) postImageUpload.value = '';
-  resetCreateModal();
-});
-
-/* שליחה לשרת */
+/* send to server */
 createSubmitBtn?.addEventListener('click', async () => {
   if (!selectedFile) return;
 
   const formData = new FormData();
-  formData.append('file', selectedFile);     // ה־API אצלך מצפה ל־'file'
-  formData.append('content', captionInput.value || '');
+  formData.append('file', selectedFile);
+  formData.append('content', (captionInput?.value || ''));
 
   try {
     const res = await fetch(`${backendURL}/api/posts`, {
@@ -484,8 +505,7 @@ createSubmitBtn?.addEventListener('click', async () => {
   }
 });
 
-let currentPostId = null;
-
+/* ====================== Posts ====================== */
 async function loadUserPosts() {
   try {
     const token = localStorage.getItem('token');
@@ -494,35 +514,49 @@ async function loadUserPosts() {
     const res = await fetch(`${backendURL}/api/users/${userId}/posts`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-
-    if (!res.ok) {
-      console.error('Failed to load user posts');
-      return;
-    }
+    if (!res.ok) { console.error('Failed to load user posts'); return; }
 
     const posts = await res.json();
-    postsGrid.innerHTML = '';
 
-    posts.forEach(post => {
-      const postDiv = document.createElement('div');
-      postDiv.className = 'post';
-      postDiv.innerHTML = `
-        ${post.image ? `<img src="${fixImageUrl(post.image)}" class="post-image" />` : ''}
-        ${post.video ? `<video src="${fixImageUrl(post.video)}" controls class="post-video"></video>` : ''}
-        <div class="post-content">${post.content || ''}</div>
-      `;
+    // הפרדה: רגילים מול קבוצות
+    const regular = [];
+    const groups  = [];
+    posts.forEach(p => (isGroupPost(p) ? groups : regular).push(p));
 
-      postsGrid.appendChild(postDiv);
-      if (post.image || post.video) {
-        const clickable = postDiv.querySelector('img,video');
-        clickable.style.cursor = 'pointer';
-        clickable.addEventListener('click', () => loadAndOpenPost(post._id));
-      }
-    });
+    // רינדור לשני הגרידים עם אותו סגנון שהיה לך
+    renderPostsGrid(profilePostsGrid, regular);
+    renderPostsGrid(groupPostsGrid, groups);
+
+    // עדכון מונה הפוסטים למעלה – רק הרגילים (כמו שביקשת)
+    const pc = document.getElementById('postsCount');
+    if (pc) pc.textContent = `${regular.length} posts`;
+
   } catch (error) {
     console.error(error);
   }
 }
+function renderPostsGrid(container, posts){
+  if (!container) return;
+  container.innerHTML = '';
+
+  posts.forEach(post => {
+    const postDiv = document.createElement('div');
+    postDiv.className = 'post';
+    postDiv.innerHTML = `
+      ${post.image ? `<img src="${fixImageUrl(post.image)}" class="post-image" />` : ''}
+      ${post.video ? `<video src="${fixImageUrl(post.video)}" controls class="post-video"></video>` : ''}
+      <div class="post-content">${escapeHtml(post.content || '')}</div>
+    `;
+    container.appendChild(postDiv);
+
+    const clickable = postDiv.querySelector('img,video');
+    if (clickable) {
+      clickable.style.cursor = 'pointer';
+      clickable.addEventListener('click', () => loadAndOpenPost(post._id));
+    }
+  });
+}
+
 
 async function loadAndOpenPost(postId) {
   try {
@@ -536,16 +570,15 @@ async function loadAndOpenPost(postId) {
     console.error(err);
     alert('Error loading post');
   }
-}async function openPostModal(post) {
-  console.log("Opening modal with post:", post);
+}
 
-  // normalize paths from upLoads -> uploads
+async function openPostModal(post) {
+  // normalize upLoads -> uploads (if needed)
   if (post.image) post.image = post.image.replace("/upLoads/", "/uploads/");
   if (post.video) post.video = post.video.replace("/upLoads/", "/uploads/");
 
   currentPostId = post._id;
 
-  // refs
   const postModal = document.getElementById('postModal');
   const postModalImage = document.getElementById('postModalImage');
   const postComments = document.getElementById('postComments');
@@ -554,7 +587,7 @@ async function loadAndOpenPost(postId) {
   const likeBtn = document.getElementById('likeBtn');
   const likesCount = document.getElementById('likesCount');
 
-  // -------- Media (left side) --------
+  // Media (left)
   let mediaHtml = '';
   if (post.image && post.image !== 'null') {
     mediaHtml = `<img src="${fixImageUrl(post.image)}" alt="post media">`;
@@ -563,96 +596,103 @@ async function loadAndOpenPost(postId) {
   } else {
     mediaHtml = `<div style="color:#fff; text-align:center;">No media found</div>`;
   }
-  postModalImage.innerHTML = mediaHtml;
+  if (postModalImage) postModalImage.innerHTML = mediaHtml;
 
-  // -------- Header (right top): avatar + username + caption --------
-  postAuthorAvatar.src = post.author?.avatar ? fixImageUrl(post.author.avatar) : 'default-avatar.png';
-  postAuthorUsername.textContent = post.author?.username || 'Unknown';
+  // Header (right): avatar + username + caption
+  if (postAuthorAvatar) postAuthorAvatar.src = post.author?.avatar ? fixImageUrl(post.author.avatar, 'avatar') : 'default-avatar.png';
+  if (postAuthorUsername) postAuthorUsername.textContent = post.author?.username || 'Unknown';
 
-  const headerEl = postAuthorUsername.closest('.post-header');
-  let textWrap = headerEl.querySelector('.author-text-wrap');
-  if (!textWrap) {
+  const headerEl = postAuthorUsername?.closest('.post-header');
+  let textWrap = headerEl?.querySelector('.author-text-wrap');
+  if (headerEl && !textWrap) {
     textWrap = document.createElement('div');
-    textWrap.className = 'author-text-wrap'; // column layout via CSS
+    textWrap.className = 'author-text-wrap';
     const optionsBtn = headerEl.querySelector('.modal-options-btn');
     headerEl.insertBefore(textWrap, optionsBtn);
     textWrap.appendChild(postAuthorUsername);
   }
 
-  // remove old caption (if exists)
-  const oldCap = textWrap.querySelector('.caption-box');
+  // caption
+  const oldCap = textWrap?.querySelector('.caption-box');
   if (oldCap) oldCap.remove();
-
-  // add caption (fallback across possible fields)
   const caption = (post.content || post.text || post.caption || post.description || '').trim();
-  if (caption) {
+  if (caption && textWrap) {
     const capEl = document.createElement('div');
     capEl.className = 'caption-box';
     capEl.textContent = caption;
     textWrap.appendChild(capEl);
   }
 
-  // -------- Comments --------
-  postComments.innerHTML = (post.comments || [])
-    .map(c => `
-      <div class="comment">
-        <img src="${c.author?.avatar ? fixImageUrl(c.author.avatar) : 'default-avatar.png'}" alt="avatar" class="comment-avatar">
-        <div class="comment-body">
-          <b>${c.author?.username || 'User'}</b>
-          <span class="comment-text">${c.text}</span>
-          <div class="comment-time">${moment(c.createdAt).fromNow()}</div>
+  // Comments
+  if (postComments) {
+    postComments.innerHTML = (post.comments || [])
+      .map(c => `
+        <div class="comment">
+          <img src="${c.author?.avatar ? fixImageUrl(c.author.avatar, 'avatar') : 'default-avatar.png'}" alt="avatar" class="comment-avatar">
+          <div class="comment-body">
+            <b>${escapeHtml(c.author?.username || 'User')}</b>
+            <span class="comment-text">${escapeHtml(c.text || '')}</span>
+            <div class="comment-time">${moment(c.createdAt).fromNow()}</div>
+          </div>
         </div>
-      </div>
-    `)
-    .join('');
+      `)
+      .join('');
+  }
 
-  // -------- Likes --------
-  likeBtn.innerHTML = (post.likes || []).includes(userId)
-    ? '<i class="fas fa-heart liked"></i>'
-    : '<i class="far fa-heart"></i>';
-  likesCount.textContent = `${(post.likes || []).length} likes`;
+  // Likes
+  if (likeBtn && likesCount) {
+    likeBtn.innerHTML = (post.likes || []).includes(userId)
+      ? '<i class="fas fa-heart liked"></i>'
+      : '<i class="far fa-heart"></i>';
+    likesCount.textContent = `${(post.likes || []).length} likes`;
 
-  likeBtn.onclick = async () => {
-    try {
-      const res = await fetch(`${backendURL}/api/posts/${post._id}/like`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      if (!res.ok) throw new Error('Failed to like');
-      const updatedPost = await res.json();
-      openPostModal(updatedPost); // refresh UI
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    likeBtn.onclick = async () => {
+      try {
+        const res = await fetch(`${backendURL}/api/posts/${post._id}/like`, {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (!res.ok) throw new Error('Failed to like');
+        const updatedPost = await res.json();
+        openPostModal(updatedPost); // refresh UI
+      } catch (err) {
+        console.error(err);
+      }
+    };
+  }
 
-  // -------- Options (⋯) -> delete modal --------
-  const optionsBtn = postModal.querySelector('.modal-options-btn');
+  // Options (⋯) -> delete modal
+  const optionsBtn = postModal?.querySelector('.modal-options-btn');
   if (optionsBtn) optionsBtn.onclick = () => openDeleteModal(post._id);
 
-  // -------- Show/close modal --------
-  postModal.classList.remove('hidden');
+  // show/close modal
+  postModal?.classList.remove('hidden');
   const closePostModalBtn = document.getElementById('closePostModalBtn');
-  closePostModalBtn.onclick = () => {
-    postModal.classList.add('hidden');
-    loadUserPosts();
-  };
-  postModal.onclick = e => { if (e.target === postModal) postModal.classList.add('hidden'); };
+  if (closePostModalBtn) {
+    closePostModalBtn.onclick = () => {
+      postModal?.classList.add('hidden');
+      loadUserPosts();
+    };
+  }
+  postModal?.addEventListener('click', (e) => { if (e.target === postModal) postModal.classList.add('hidden'); });
 }
 
 function openDeleteModal(postId) {
   const deleteModal = document.getElementById('deleteModal');
-  deleteModal.classList.remove('hidden');
+  deleteModal?.classList.remove('hidden');
 
-  document.getElementById('confirmDeleteBtn').onclick = async () => {
+  const confirmBtn = document.getElementById('confirmDeleteBtn');
+  const cancelBtn  = document.getElementById('cancelDeleteBtn');
+
+  if (confirmBtn) confirmBtn.onclick = async () => {
     try {
       const res = await fetch(`${backendURL}/api/posts/${postId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (!res.ok) throw new Error('Failed to delete post');
-      deleteModal.classList.add('hidden');
-      document.getElementById('postModal').classList.add('hidden');
+      deleteModal?.classList.add('hidden');
+      document.getElementById('postModal')?.classList.add('hidden');
       loadUserPosts();
     } catch (err) {
       alert('Error deleting post');
@@ -660,9 +700,7 @@ function openDeleteModal(postId) {
     }
   };
 
-  document.getElementById('cancelDeleteBtn').onclick = () => {
-    deleteModal.classList.add('hidden');
-  };
+  if (cancelBtn) cancelBtn.onclick = () => deleteModal?.classList.add('hidden');
 }
 
 /* ====================== Comments Form ====================== */
@@ -670,7 +708,7 @@ const commentForm = document.getElementById('commentForm');
 commentForm?.addEventListener('submit', async e => {
   e.preventDefault();
   const commentInput = document.getElementById('commentInput');
-  const text = commentInput.value.trim();
+  const text = (commentInput?.value || '').trim();
   if (!text || !currentPostId) return;
 
   try {
@@ -682,9 +720,8 @@ commentForm?.addEventListener('submit', async e => {
       },
       body: JSON.stringify({ text })
     });
-
     if (!res.ok) throw new Error('Failed to add comment');
-    commentInput.value = '';
+    if (commentInput) commentInput.value = '';
     const updatedPost = await res.json();
     openPostModal(updatedPost);
   } catch (err) {
@@ -692,3 +729,340 @@ commentForm?.addEventListener('submit', async e => {
     alert('Error adding comment');
   }
 });
+
+/* ===================== Search Drawer (Instagram-like) ===================== */
+let searchMode = 'users'; // 'users' | 'groups'
+let searchDebounceTimer = null;
+let searchAbort = null;
+
+function openUserSearchModal() {
+  const overlay = document.getElementById('modalOverlay');
+  const drawer  = document.getElementById('searchDrawer');
+  if (!overlay || !drawer) return;
+
+  overlay.style.display = 'block';
+  drawer.style.display = 'flex';
+
+  setActiveTab('users');
+
+  const input = document.getElementById('searchInput');
+  if (input) {
+    input.value = '';
+    const clr = document.getElementById('searchClearBtn');
+    if (clr) clr.style.display = 'none';
+    renderResults([], 'Start typing to search…');
+    setTimeout(() => input.focus(), 0);
+  }
+}
+
+function closeUserSearchModal() {
+  const overlay = document.getElementById('modalOverlay');
+  const drawer  = document.getElementById('searchDrawer');
+  if (overlay) overlay.style.display = 'none';
+  if (drawer)  drawer.style.display = 'none';
+  renderResults([]);
+}
+
+function setActiveTab(type){
+  searchMode = type;
+  document.getElementById('tabUsers')?.classList.toggle('active', type==='users');
+  document.getElementById('tabGroups')?.classList.toggle('active', type==='groups');
+  const q = document.getElementById('searchInput')?.value.trim() || '';
+  if (q) doSearch(q, searchMode); else renderResults([], 'Search '+type+'…');
+}
+
+/* tab clicks */
+document.getElementById('tabUsers')?.addEventListener('click', () => setActiveTab('users'));
+document.getElementById('tabGroups')?.addEventListener('click', () => setActiveTab('groups'));
+
+/* input & clear */
+document.getElementById('searchInput')?.addEventListener('input', (e)=>{
+  const q = e.target.value;
+  const clr = document.getElementById('searchClearBtn');
+  if (clr) clr.style.display = q ? 'block' : 'none';
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(()=> doSearch(q.trim(), searchMode), 250);
+});
+document.getElementById('searchClearBtn')?.addEventListener('click', ()=>{
+  const input = document.getElementById('searchInput');
+  if (input) {
+    input.value = '';
+    document.getElementById('searchClearBtn').style.display = 'none';
+    input.focus();
+    renderResults([], 'Start typing to search…');
+  }
+});
+
+async function doSearch(query, mode){
+  if (!query){
+    renderResults([], 'Start typing to search…');
+    return;
+  }
+
+  if (searchAbort) searchAbort.abort();
+  searchAbort = new AbortController();
+
+  renderResults([], 'Searching…');
+
+  try {
+    const url = mode === 'groups'
+      ? `${backendURL}/api/groups/search?name=${encodeURIComponent(query)}`
+      : `${backendURL}/api/users/search?username=${encodeURIComponent(query)}`;
+
+    const res = await fetch(url, { headers: authHeaders(), signal: searchAbort.signal });
+    if (!res.ok) throw new Error('Search failed');
+    const data = await res.json();
+    renderResults(Array.isArray(data) ? data : [], (data && data.length) ? '' : 'No results.');
+  } catch(e){
+    if (e.name !== 'AbortError') {
+      renderResults([], 'Error while searching.');
+      console.error(e);
+    }
+  }
+}
+
+function renderResults(items, emptyMsg){
+  const list = document.getElementById('searchResultsList');
+  if (!list) return;
+
+  if (!items || !items.length){
+    list.innerHTML = `<div class="empty">${emptyMsg || 'No results.'}</div>`;
+    return;
+  }
+
+  const rows = items.map(item => {
+    if (searchMode === 'groups'){
+      const cover = groupCover(item);
+      const members = item.members?.length || 0;
+      const href = `create-post.html?groupId=${encodeURIComponent(item._id)}`;
+      return `
+        <a class="result-row" href="${href}">
+          <img class="result-avatar" src="${cover}" alt="${escapeHtml(item.name || 'Group')}" />
+          <div class="result-meta">
+            <div class="result-title">${escapeHtml(item.name || 'Group')}</div>
+            <div class="result-sub">${members} members</div>
+          </div>
+        </a>`;
+    } else {
+      const avatar = avatarUrl(item.profileImage || item.avatar || item.image);
+      const href   = `profile.html?userId=${encodeURIComponent(item._id)}`;
+      return `
+        <a class="result-row" href="${href}">
+          <img class="result-avatar" src="${avatar}" alt="${escapeHtml(item.username || 'user')}" />
+          <div class="result-meta">
+            <div class="result-title">${escapeHtml(item.username || 'user')}</div>
+            <div class="result-sub">${escapeHtml(item.fullName || item.bio || '')}</div>
+          </div>
+        </a>`;
+    }
+  }).join('');
+
+  list.innerHTML = rows;
+}
+/* ===================== Followers / Following modal ===================== */
+
+const followModalEl       = document.getElementById('followModal');
+const followTitleEl       = document.getElementById('followModalTitle');
+const followListEl        = document.getElementById('followList');
+const followSearchInput   = document.getElementById('followSearchInput');
+const closeFollowModalBtn = document.getElementById('closeFollowModalBtn');
+const followRowTpl        = document.getElementById('followRowTpl');
+
+document.getElementById('followersCount')?.addEventListener('click', () => openFollowModal('followers'));
+document.getElementById('followingCount')?.addEventListener('click', () => openFollowModal('following'));
+closeFollowModalBtn?.addEventListener('click', closeFollowModal);
+followModalEl?.addEventListener('click', (e) => { if (e.target === followModalEl) closeFollowModal(); });
+
+/** נשמור בזיכרון את רשימת העוקבים שאני עוקב אחריהם (שלי) כדי לצבוע כפתורי Follow/Following */
+let myFollowingSet = null;
+
+/** מצב מודל נוכחי */
+let followModalState = { mode: 'followers', items: [], viewedUserId: userId };
+
+/** דואג שיהיה לנו סט של מי שאני עוקב אחריו (אני = המשתמש המחובר) */
+async function ensureMyFollowingSet() {
+  if (myFollowingSet) return myFollowingSet;
+  if (!loggedInUserId) return (myFollowingSet = new Set());
+  try {
+    const res = await fetch(`${backendURL}/api/users/${loggedInUserId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const me = res.ok ? await res.json() : null;
+    myFollowingSet = new Set((me?.following || []).map(x => (typeof x === 'string' ? x : x?._id)));
+  } catch {
+    myFollowingSet = new Set();
+  }
+  return myFollowingSet;
+}
+
+/** מנרמל אובייקטים שהשרת מחזיר (followers/following) לצורה אחידה */
+function normUsers(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.map(u => ({
+    _id: String(u?._id || u?.id || u),
+    username: u?.username || '',
+    avatar: u?.avatar || u?.profileImage || '',
+    fullName: u?.fullName || u?.name || '',
+    bio: u?.bio || ''
+  })).filter(u => u._id);
+}
+
+/** פותח את המודל, טוען רשימה מה־currentUser ומרנדר */
+async function openFollowModal(mode) {
+  await ensureMyFollowingSet();
+  const viewed = currentUser; // נטען כבר ב-loadUserProfile()
+  const items = normUsers(mode === 'followers' ? (viewed?.followers || []) : (viewed?.following || []));
+  followModalState = { mode, items, viewedUserId: viewed?._id || userId };
+
+  followTitleEl.textContent = mode === 'followers' ? 'Followers' : 'Following';
+  followSearchInput.value = '';
+  renderFollowList(items);
+
+  followModalEl?.classList.remove('hidden');
+}
+
+function closeFollowModal() {
+  followModalEl?.classList.add('hidden');
+}
+
+/** רינדור מלא של הרשימה */
+function renderFollowList(items) {
+  followListEl.innerHTML = '';
+  if (!items.length) {
+    followListEl.innerHTML = `<div class="empty" style="padding:14px;color:#aaa;">No results</div>`;
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  items.forEach(u => frag.appendChild(buildFollowRow(u)));
+  followListEl.appendChild(frag);
+}
+
+/** בונה שורה אחת ברשימת Follow */
+function buildFollowRow(userObj) {
+  const row = followRowTpl.content.firstElementChild.cloneNode(true);
+  const avatarEl = row.querySelector('.row-avatar');
+  const usernameEl = row.querySelector('.row-username');
+  const subEl = row.querySelector('.row-sub');
+  const actionBtn = row.querySelector('.row-action');
+
+  avatarEl.src = avatarUrl(userObj.avatar);
+  avatarEl.alt = userObj.username || 'user';
+  usernameEl.textContent = userObj.username || 'user';
+  subEl.textContent = userObj.fullName || userObj.bio || '';
+
+  // לחיצה על כל השורה (חוץ מהכפתור) → מעבר לפרופיל
+  row.addEventListener('click', (e) => {
+    if (e.target.closest('.row-action')) return;
+    location.href = `profile.html?userId=${encodeURIComponent(userObj._id)}`;
+  });
+
+  const isMe = userObj._id === loggedInUserId;
+  let action = ''; // 'follow' | 'unfollow' | 'remove'
+
+  if (isOwnProfile && followModalState.mode === 'followers' && !isMe) {
+    // במודל Followers של עצמי – כמו אינסטגרם: כפתור Remove
+    actionBtn.textContent = 'Remove';
+    action = 'remove';
+  } else {
+    // אחרת – Follow/Following בהתאם אם אני עוקב אחרי המשתמש הזה
+    const iFollow = myFollowingSet?.has(userObj._id);
+    if (isMe) {
+      actionBtn.style.display = 'none';
+    } else if (iFollow) {
+      actionBtn.textContent = 'Following';
+      action = 'unfollow';
+    } else {
+      actionBtn.textContent = 'Follow';
+      action = 'follow';
+    }
+  }
+
+  actionBtn.onclick = async (e) => {
+    e.stopPropagation();
+    if (action === 'follow' || action === 'unfollow') {
+      const ok = await toggleFollow(userObj._id);
+      if (!ok) return;
+      // עדכון סט מקומי + טקסט הכפתור
+      const nowFollow = myFollowingSet.has(userObj._id);
+      actionBtn.textContent = nowFollow ? 'Following' : 'Follow';
+      action = nowFollow ? 'unfollow' : 'follow';
+      // רענון קל של פרטי הפרופיל (מונה עוקבים/נעקבים)
+      loadUserProfile();
+    } else if (action === 'remove') {
+      const ok = await removeFollower(userObj._id);
+      if (ok) {
+        row.remove();        // הסרה מה־UI
+        loadUserProfile();   // לעדכן מונים
+      }
+    }
+  };
+
+  return row;
+}
+
+/** חיפוש בתוך המודל */
+followSearchInput?.addEventListener('input', (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  const base = followModalState.items || [];
+  if (!q) { renderFollowList(base); return; }
+  const filtered = base.filter(u =>
+    (u.username || '').toLowerCase().includes(q) ||
+    (u.fullName || '').toLowerCase().includes(q)
+  );
+  renderFollowList(filtered);
+});
+
+/** Follow/Unfollow – כמו בקוד שלך: POST /api/users/:id/follow */
+async function toggleFollow(targetUserId) {
+  try {
+    const res = await fetch(`${backendURL}/api/users/${targetUserId}/follow`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error(await res.text().catch(()=>''));
+    // הפיכה בסט המקומי
+    if (myFollowingSet.has(targetUserId)) myFollowingSet.delete(targetUserId);
+    else myFollowingSet.add(targetUserId);
+    return true;
+  } catch (err) {
+    console.error('toggleFollow failed:', err);
+    alert('Failed to update follow status');
+    return false;
+  }
+}
+
+/** Remove follower – צריך תמיכה מהשרת.
+ * מנסה שני מסלולים מקובלים; אם אין – מציג הודעה.
+ */
+async function removeFollower(targetUserId) {
+  const attempts = [
+    { url: `${backendURL}/api/users/${targetUserId}/remove-follower`, method: 'POST' },
+    { url: `${backendURL}/api/users/${loggedInUserId}/followers/${targetUserId}`, method: 'DELETE' }
+  ];
+  for (const a of attempts) {
+    try {
+      const res = await fetch(a.url, {
+        method: a.method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) return true;
+    } catch (e) {
+      // ננסה את המסלול הבא
+    }
+  }
+  alert('Remove follower is not supported on the server yet.');
+  return false;
+}
+function setActiveProfileTab(which){
+  const isPosts = which === 'posts';
+  profileTabPosts?.classList.toggle('active', isPosts);
+  profileTabGroups?.classList.toggle('active', !isPosts);
+  panelProfilePosts?.classList.toggle('hidden', !isPosts);
+  panelGroupPosts?.classList.toggle('hidden', isPosts);
+}
+
+profileTabPosts?.addEventListener('click', () => setActiveProfileTab('posts'));
+profileTabGroups?.addEventListener('click', () => setActiveProfileTab('groups'));
+
+// ברירת מחדל: לשונית Posts
+document.addEventListener('DOMContentLoaded', () => setActiveProfileTab('posts'));

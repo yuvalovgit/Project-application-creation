@@ -1,5 +1,6 @@
 const backendURL = 'http://localhost:5000';
 
+const postsCache = new Map(); // postId -> full post (כולל comments)
 const token    = localStorage.getItem('token');
 const userId   = localStorage.getItem('userId');
 const urlParams = new URLSearchParams(window.location.search);
@@ -350,19 +351,31 @@ async function loadGroupPosts() {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (!res.ok) throw new Error('Failed to load posts');
+
     const posts = await res.json();
 
     const postsGrid = document.getElementById('groupPostsFeed');
+    if (!postsGrid) return;
     postsGrid.innerHTML = '';
 
-    posts.slice().reverse().forEach(post => {
+    // cache גלובלי לפוסטים (אם לא הוגדר קודם)
+    if (!window.postsCache) window.postsCache = new Map();
+
+    // מיון מהחדש לישן
+    const ordered = Array.isArray(posts)
+      ? [...posts].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      : [];
+
+    ordered.forEach(post => {
       const postEl = document.createElement('div');
       postEl.className = 'group-post';
 
-
       const postId = typeof post._id === 'object' ? post._id.toString() : post._id;
-      const isLiked = Array.isArray(post.likes) && post.likes.includes(userId);
 
+      // נשמור ב־cache לשימוש במודל תגובות
+      window.postsCache.set(postId, post);
+
+      const isLiked = (post.likes || []).map(String).includes(String(userId));
       const likeIconClass = isLiked ? 'fas' : 'far';
 
       const lastComments = (post.comments || []).slice(-2).map(c => `
@@ -371,11 +384,10 @@ async function loadGroupPosts() {
         </div>
       `).join('');
 
-      // --- מחבר נתוני מחבר הפוסט ---
+      // --- פרטי מחבר הפוסט ---
       const authorId   = post.author?._id || '';
       const authorName = post.author?.username || 'Unknown';
 
-      // מנסה שדות שונים לתמונת פרופיל, עם ברירת מחדל
       const rawAvatar =
         post.author?.profileImage ||
         post.author?.avatar ||
@@ -387,41 +399,41 @@ async function loadGroupPosts() {
       const authorImg  = fixImageUrl(rawAvatar);
       const profileUrl = authorId ? `profile.html?userId=${encodeURIComponent(authorId)}` : '#';
 
-      // --- בניית הפוסט ---
-   postEl.innerHTML = `
-  <div class="post-header" style="display:flex;align-items:center;gap:10px;padding:8px 10px;">
-    <img src="${authorImg}"
-         alt="${authorName}"
-         class="avatar"
-         style="width:35px;height:35px;border-radius:50%;object-fit:cover;cursor:pointer;"
-         onclick="window.location.href='${profileUrl}'"
-         onerror="this.onerror=null; this.src='${fixImageUrl('/uploads/default-avatar.png')}';" />
+      // --- תבנית הפוסט ---
+      postEl.innerHTML = `
+        <div class="post-header" style="display:flex;align-items:center;gap:10px;padding:8px 10px;">
+          <img src="${authorImg}"
+               alt="${authorName}"
+               class="avatar"
+               style="width:35px;height:35px;border-radius:50%;object-fit:cover;cursor:pointer;"
+               onclick="window.location.href='${profileUrl}'"
+               onerror="this.onerror=null; this.src='${fixImageUrl('/uploads/default-avatar.png')}';" />
 
-    <a href="${profileUrl}"
-       class="post-author-link"
-       style="color:#000;font-weight:600;text-decoration:none;cursor:pointer;">
-      ${authorName}
-    </a>
+          <a href="${profileUrl}"
+             class="post-author-link"
+             style="color:#000;font-weight:600;text-decoration:none;cursor:pointer;">
+            ${authorName}
+          </a>
 
-    <span class="post-time" style="color:#777;font-size:12px;margin-left:auto;">
-      ${post.createdAt ? new Date(post.createdAt).toLocaleString() : ''}
-    </span>
+          <span class="post-time" style="color:#777;font-size:12px;margin-left:auto;">
+            ${post.createdAt ? new Date(post.createdAt).toLocaleString() : ''}
+          </span>
 
-    ${
-      (authorId && authorId === userId)
-      ? `
-        <button class="post-options-btn" aria-haspopup="menu" aria-expanded="false" data-post="${postId}">⋯</button>
-        <div class="post-menu hidden" id="post-menu-${postId}">
-          <button class="menu-edit"   data-post="${postId}" data-caption="${escapeHtml(post.content || '')}">Edit caption</button>
-          <button class="menu-delete" data-post="${postId}">Delete</button>
+          ${
+            (authorId && authorId === userId)
+            ? `
+              <button class="post-options-btn" aria-haspopup="menu" aria-expanded="false" data-post="${postId}">⋯</button>
+              <div class="post-menu hidden" id="post-menu-${postId}">
+                <button class="menu-edit"   data-post="${postId}" data-caption="${escapeHtml(post.content || '')}">Edit caption</button>
+                <button class="menu-delete" data-post="${postId}">Delete</button>
+              </div>
+            `
+            : ''
+          }
         </div>
-      `
-      : ''
-    }
-  </div>
 
-  ${post.image ? `<img src="${fixImageUrl(post.image)}" class="post-media" />` : ''}
-  ${post.video ? `<video src="${fixImageUrl(post.video)}" class="post-media" controls></video>` : ''}
+        ${post.image ? `<img src="${fixImageUrl(post.image)}" class="post-media" />` : ''}
+        ${post.video ? `<video src="${fixImageUrl(post.video)}" class="post-media" controls></video>` : ''}
 
         <div class="post-actions">
           <i class="${likeIconClass} fa-heart" onclick="toggleLike('${postId}', this)"></i>
@@ -439,26 +451,44 @@ async function loadGroupPosts() {
 
         <div class="post-comments">
           ${lastComments}
-          ${(post.comments?.length || 0) > 2 ? `<a href="#">View all ${post.comments.length} comments</a>` : ''}
+          ${(post.comments?.length || 0) > 2
+            ? `<a href="#" class="view-all" data-post="${postId}">View all ${post.comments.length} comments</a>`
+            : ''}
         </div>
 
         <div class="post-add-comment">
-          <input type="text" 
-       placeholder="Add a comment..."
-       data-post="${postId}"
-       onkeypress="if(event.key === 'Enter') submitComment('${postId}', this)" />
-
+          <input
+            type="text"
+            placeholder="Add a comment..."
+            data-post="${postId}"
+            onkeypress="if(event.key === 'Enter') submitComment('${postId}', this)" />
         </div>
-
       `;
 
       postsGrid.appendChild(postEl);
     });
+
+    // חיווט חד־פעמי לקישורי "View all … comments"
+    if (!postsGrid.dataset.viewAllWired) {
+      postsGrid.addEventListener('click', (e) => {
+        const link = e.target.closest('a.view-all');
+        if (!link) return;
+        e.preventDefault();
+        const pid = link.dataset.post;
+        if (typeof openCommentsModal === 'function') {
+          openCommentsModal(pid);
+        }
+      });
+      postsGrid.dataset.viewAllWired = '1';
+    }
+
   } catch (err) {
     console.error('Error loading posts:', err);
     alert('Error loading posts');
   }
 }
+
+
 function focusComment(postId) {
   const input = document.querySelector(`.post-add-comment input[data-post="${postId}"]`);
   if (input) input.focus();
@@ -953,3 +983,109 @@ function renderResults(items, emptyMsg) {
 }
 
 window.addEventListener('DOMContentLoaded', wireSearchUI);
+// ======== View-all-comments wiring (delegation) ========
+(function wireViewAllOnce(){
+  if (window.__wiredViewAll) return;
+  window.__wiredViewAll = true;
+
+  const feed = document.getElementById('groupPostsFeed');
+  if (!feed) return;
+
+  feed.addEventListener('click', (e) => {
+    const link = e.target.closest('.view-all');
+    if (!link) return;
+    e.preventDefault();
+    const postId = link.dataset.post;
+    openCommentsModal(postId);
+  });
+})();
+
+// ======== Comments modal logic ========
+const commentsModal  = document.getElementById('commentsModal');
+const closeComments  = document.getElementById('closeCommentsBtn');
+const commentsListEl = document.getElementById('commentsList');
+const commentsForm   = document.getElementById('commentsAddForm');
+const commentsInput  = document.getElementById('commentsInput');
+
+closeComments?.addEventListener('click', () => commentsModal.classList.add('hidden'));
+commentsModal?.addEventListener('click', (e) => {
+  if (e.target === commentsModal) commentsModal.classList.add('hidden');
+});
+
+async function openCommentsModal(postId){
+  if (!postId) return;
+
+  // ננסה להביא פוסט עדכני מהשרת; אם אין ראוט – ניפול חזרה ל־cache
+  let post = null;
+  try {
+    const res = await fetch(`${backendURL}/api/posts/${postId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) post = await res.json();
+  } catch(_) {}
+  if (!post) post = postsCache.get(postId);
+  if (!post) return;
+
+  commentsModal.dataset.postId = postId;
+  renderCommentsList(post.comments || []);
+  commentsModal.classList.remove('hidden');
+
+  // פוקוס לשדה
+  setTimeout(() => commentsInput?.focus(), 0);
+}
+
+function renderCommentsList(comments){
+  if (!commentsListEl) return;
+  if (!Array.isArray(comments) || !comments.length){
+    commentsListEl.innerHTML = `<p style="color:#9b9b9b;text-align:center;padding:10px;">No comments yet</p>`;
+    return;
+  }
+
+  commentsListEl.innerHTML = comments.map(c => {
+    const username = (c.author && c.author.username) || 'User';
+    const avatar   = fixImageUrl(
+      (c.author && (c.author.profileImage || c.author.avatar || c.author.image)) ||
+      '/uploads/default-avatar.png'
+    );
+    const time = c.createdAt ? new Date(c.createdAt).toLocaleString() : '';
+    return `
+      <div class="row">
+        <img class="avatar" src="${avatar}" alt="${escapeHtml(username)}"
+             onerror="this.onerror=null;this.src='${fixImageUrl('/uploads/default-avatar.png')}';">
+        <div class="meta">
+          <span class="user">${escapeHtml(username)}</span>
+          <span>${escapeHtml(c.text || '')}</span>
+          <span class="time"> · ${escapeHtml(time)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// שליחת תגובה מתוך המודל
+commentsForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const postId = commentsModal?.dataset.postId;
+  const text = commentsInput.value.trim();
+  if (!postId || !text) return;
+
+  try {
+    const res = await fetch(`${backendURL}/api/posts/${postId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ text })
+    });
+    const updated = await res.json();
+    if (!res.ok) throw new Error(updated?.message || 'Failed to add comment');
+
+    commentsInput.value = '';
+
+    // עדכן רשימה במודל + מטמון + רענון פיד קבוצתי כדי לעדכן מונה
+    renderCommentsList(updated.comments || []);
+    postsCache.set(postId, updated);
+    if (groupId) await loadGroupPosts();
+  } catch (err) {
+    console.error(err);
+    alert('Error adding comment');
+  }
+});
